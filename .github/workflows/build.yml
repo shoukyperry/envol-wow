@@ -30,13 +30,10 @@ jobs:
       - name: Construire et tester (routes RestedXP + Polestar à jour)
         run: python tools/build.py
 
-      - name: Vérifier la syntaxe du programme de mise à jour
-        shell: pwsh
+      - name: Empaqueter le lanceur
         run: |
-          $err = $null
-          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/updater/MettreAJour-Envol.ps1", [ref]$null, [ref]$err) | Out-Null
-          if ($err) { $err | ForEach-Object { Write-Error $_.ToString() }; exit 1 }
-          Compress-Archive -Path updater/* -DestinationPath dist/Envol-MiseAJour.zip -Force
+          mkdir -p pkg/Envol-Lanceur && cp -r lanceur/* pkg/Envol-Lanceur/
+          (cd pkg && zip -qr ../dist/Envol-Lanceur.zip Envol-Lanceur)
 
       - name: Publier si quelque chose a changé
         env:
@@ -51,7 +48,7 @@ jobs:
           fi
           NOTES="Routes RestedXP $(grep -o 'rxp = "[^"]*"' addon/Envol/Data/Version.lua | cut -d'"' -f2), Polestar $(grep -o 'ps = "[^"]*"' addon/Envol/Data/Version.lua | cut -d'"' -f2).
           empreinte: $HASH"
-          gh release create "v$VERSION" dist/Envol.zip dist/Envol-MiseAJour.zip --title "Envol $VERSION" --notes "$NOTES" --latest
+          gh release create "v$VERSION" dist/Envol.zip dist/Envol-Lanceur.zip --title "Envol $VERSION" --notes "$NOTES" --latest
           # on ne garde que les 10 dernières versions
           gh release list --limit 100 --json tagName --jq '.[10:][].tagName' | while read -r t; do
             gh release delete "$t" --yes --cleanup-tag || true

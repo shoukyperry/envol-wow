@@ -1,0 +1,37 @@
+name: Tester le lanceur (Windows)
+
+on:
+  push:
+    paths: ["lanceur/**", ".github/workflows/lanceur.yml"]
+  workflow_dispatch: {}
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntaxe PowerShell 5.1
+        shell: powershell
+        run: |
+          $err = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\lanceur\Envol.ps1", [ref]$null, [ref]$err) | Out-Null
+          if ($err) { $err | ForEach-Object { Write-Error $_.ToString() }; exit 1 }
+          "Syntaxe OK"
+
+      - name: Ouvrir la fenêtre et la capturer (Windows PowerShell 5.1, comme sur le PC)
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path captures | Out-Null
+          foreach ($nom in 'principale', 'cle') {
+            $env:ENVOL_CAPTURE = "$PWD\captures\$nom.png"
+            $p = Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-STA','-File',"$PWD\lanceur\Envol.ps1" -PassThru -Wait -RedirectStandardError "captures\$nom-erreurs.txt"
+            if (-not (Test-Path $env:ENVOL_CAPTURE)) { Get-Content "captures\$nom-erreurs.txt"; throw "pas de capture $nom (code $($p.ExitCode))" }
+            "Capture $nom : $((Get-Item $env:ENVOL_CAPTURE).Length) octets"
+          }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures
+          path: captures/

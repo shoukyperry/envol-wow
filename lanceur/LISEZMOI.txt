@@ -1,0 +1,11 @@
+Envol — lanceur et mise à jour
+
+À placer dans le dossier du client WoW Forever, par exemple :
+  D:\World of Warcraft\_forever_\Envol-Lanceur\
+
+Double-cliquez sur « Lancer Envol.vbs » (ou le raccourci du bureau).
+Première fois : collez une clé GitHub en lecture seule (la fenêtre explique comment la créer).
+Case « Mettre à jour automatiquement » : vérification à chaque démarrage de Windows.
+
+Crédits : images générées par IA (Hugging Face, Z-Image Turbo) pour Envol ;
+police Cinzel (SIL Open Font License 1.1, voir assets/OFL-Cinzel.txt).
