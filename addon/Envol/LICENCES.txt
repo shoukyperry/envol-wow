@@ -1,0 +1,31 @@
+Envol — guide de leveling en français pour WoW Forever
+=======================================================
+
+Envol réunit deux sources de routes publiques. Il n'est affilié ni à RestedXP ni à Polestar,
+et aucun des deux n'a approuvé cette adaptation. Usage personnel, non commercial.
+
+1) Routes RestedXP (niveaux 1 à ~22, toutes les races de départ, en français)
+   Source : https://github.com/RestedXP/RXPGuides (version exacte : voir Data/Version.lua)
+   Fichier : Data/RXP.lua
+   Licence : Creative Commons Attribution - Pas d'utilisation commerciale - Partage dans les
+   mêmes conditions 4.0 International (CC BY-NC-SA 4.0) — texte : LICENCE-CC-BY-NC-SA-RESTEDXP.txt
+   Modifications : conversion du format de guide RestedXP vers le format de données d'Envol
+   (mêmes étapes, mêmes textes français, mêmes coordonnées). Les routes payantes de RestedXP
+   ne sont PAS incluses.
+
+2) Routes Polestar Guides (niveaux 1 à 60, deux factions, textes français)
+   Source : https://github.com/fitzforge/polestar (version exacte : voir Data/Version.lua)
+   Fichiers : Data/Polestar_Alliance.lua, Data/Polestar_Horde.lua, Data/Quetes.lua
+   Licence : GNU GPL version 3 — texte : LICENCE-GPLv3-POLESTAR.txt
+   Données tierces utilisées par Polestar (pfQuest, tables du client, etc.) :
+   LICENCE-DONNEES-POLESTAR.txt
+   Modifications : extraction des guides de leveling compilés, conversion des coordonnées
+   « Era » en coordonnées du monde, textes français reconstitués depuis les traductions et
+   les noms français fournis par Polestar.
+
+Code d'Envol (Core.lua, Engine.lua, Arrow.lua, UI.lua) et texture Media/Fleche.tga :
+écrits pour Envol.
+
+Note : les licences CC BY-NC-SA et GPL ne sont pas compatibles entre elles pour une
+redistribution commune. Ce paquet est destiné à un usage personnel ; ne le republiez pas
+tel quel (sur CurseForge par exemple) sans séparer les deux sources.

@@ -1,0 +1,5 @@
+upstream/
+work/
+dist/
+addon/Envol/Data/
+__pycache__/

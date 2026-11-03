@@ -1,0 +1,58 @@
+name: Construire Envol
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # chaque jour vers 5 h (heure de Paris)
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Outils de test
+        run: pip install lupa
+
+      - name: Construire et tester (routes RestedXP + Polestar à jour)
+        run: python tools/build.py
+
+      - name: Vérifier la syntaxe du programme de mise à jour
+        shell: pwsh
+        run: |
+          $err = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/updater/MettreAJour-Envol.ps1", [ref]$null, [ref]$err) | Out-Null
+          if ($err) { $err | ForEach-Object { Write-Error $_.ToString() }; exit 1 }
+          Compress-Archive -Path updater/* -DestinationPath dist/Envol-MiseAJour.zip -Force
+
+      - name: Publier si quelque chose a changé
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(cat dist/version.txt)
+          HASH=$(cat dist/hash.txt)
+          LAST=$(gh release view --json body --jq .body 2>/dev/null | grep -o 'empreinte: [0-9a-f]*' | cut -d' ' -f2 || true)
+          if [ "$LAST" = "$HASH" ]; then
+            echo "Rien de nouveau (empreinte $HASH) : pas de nouvelle version."
+            exit 0
+          fi
+          NOTES="Routes RestedXP $(grep -o 'rxp = "[^"]*"' addon/Envol/Data/Version.lua | cut -d'"' -f2), Polestar $(grep -o 'ps = "[^"]*"' addon/Envol/Data/Version.lua | cut -d'"' -f2).
+          empreinte: $HASH"
+          gh release create "v$VERSION" dist/Envol.zip dist/Envol-MiseAJour.zip --title "Envol $VERSION" --notes "$NOTES" --latest
+          # on ne garde que les 10 dernières versions
+          gh release list --limit 100 --json tagName --jq '.[10:][].tagName' | while read -r t; do
+            gh release delete "$t" --yes --cleanup-tag || true
+          done

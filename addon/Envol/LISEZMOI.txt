@@ -1,0 +1,45 @@
+ENVOL — guide de leveling en français pour WoW Forever
+=====================================================
+
+INSTALLATION
+1. Fermez le jeu.
+2. Copiez le dossier « Envol » (celui qui contient Envol.toc) dans le dossier AddOns du client Forever :
+   World of Warcraft\<dossier du client Forever>\Interface\AddOns\
+   Attention : Envol.toc doit être directement dans AddOns\Envol\, pas dans un dossier de plus.
+3. Lancez le jeu, ouvrez « AddOns » sur l'écran de sélection du personnage et cochez Envol.
+   Si Envol apparaît « périmé », cochez « Charger les AddOns périmés ».
+
+UTILISATION
+- À la connexion, Envol choisit la route qui correspond à votre race et à votre niveau.
+- La fenêtre affiche l'étape en cours ; elle avance toute seule quand vous acceptez, terminez
+  ou rendez une quête, apprenez un sort, montez de niveau ou arrivez à un point.
+- Lignes avec une case à cocher (vendre, prendre un vol, pierre de foyer...) : cliquez dessus
+  une fois fait, ou laissez Envol les cocher quand il voit l'action.
+- Boutons « < » et « > » : étape précédente / étape suivante (pour sauter une étape).
+- « En chemin » : choses à faire pendant que vous allez à l'étape suivante.
+- La flèche indique le prochain point : verte quand vous allez dans la bonne direction,
+  rouge à l'opposé. Clic droit dessus : réglages. Glisser : la déplacer.
+- Les quêtes prévues par l'étape sont acceptées et rendues automatiquement (Maj enfoncée
+  en parlant au PNJ pour l'empêcher ; quand il faut choisir une récompense, c'est vous qui choisissez).
+- Bas de fenêtre : XP par heure et temps estimé avant le prochain niveau.
+
+COMMANDES
+/envol             afficher / masquer la fenêtre
+/envol routes      choisir une autre route
+/envol réglages    options (flèche, taille, quêtes de groupe, quêtes automatiques)
+/envol s           étape suivante        /envol p   étape précédente
+/envol flèche      afficher / masquer la flèche
+/envol reset       laisser Envol rechoisir la route selon votre race et votre niveau
+
+LES ROUTES
+- Niveaux 1 à ~20-22 : routes RestedXP publiques (speedrunners, testées pendant la bêta),
+  pour chaque zone de départ, y compris l'île de Zéphras (Skyborne). Textes en français.
+- Ensuite jusqu'au 60 : routes Polestar, calculées par simulation. Elles n'ont pas encore été
+  jouées de bout en bout sur Forever, et les nouvelles zones 30-60 de Forever (Riverglades,
+  Hyjal...) n'y sont pas encore. Quelques textes secondaires restent en anglais.
+- Les quêtes déjà faites sont sautées automatiquement au passage d'une route à l'autre.
+
+LIMITES CONNUES
+- Le jeu sort le 4 novembre : certaines quêtes peuvent avoir changé au dernier patch.
+  Si une étape bloque, passez-la avec « > ».
+- Pas de guide de donjon ni de métiers.

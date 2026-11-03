@@ -1,0 +1,18 @@
+## Interface: 16001
+## Title: Envol |cff4fc3f7Leveling|r
+## Notes: Guide de leveling en français pour WoW Forever : étapes, quêtes automatiques et flèche directionnelle.
+## Version: 1.1.20261103-a753e9
+## Author: Fait sur mesure pour Ange (Claude)
+## SavedVariables: EnvolDB
+## SavedVariablesPerCharacter: EnvolChar
+## X-License: Routes RestedXP CC BY-NC-SA 4.0 · Routes Polestar GPLv3 — voir LICENCES.txt
+
+Core.lua
+Data\Version.lua
+Data\Quetes.lua
+Data\RXP.lua
+Data\Polestar_Alliance.lua
+Data\Polestar_Horde.lua
+Engine.lua
+Arrow.lua
+UI.lua
