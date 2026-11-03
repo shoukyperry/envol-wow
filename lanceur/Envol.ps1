@@ -319,8 +319,8 @@ $fontes = ([Uri](Join-Path $Assets '/')).AbsoluteUri
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal">
@@ -353,7 +353,7 @@ $fontes = ([Uri](Join-Path $Assets '/')).AbsoluteUri
         </Grid>
 
         <!-- panneau d'informations -->
-        <Border Grid.Row="2" CornerRadius="6" BorderBrush="#996E5426" BorderThickness="1" Background="#B8120E0A" Padding="20,14">
+        <Border Grid.Row="2" CornerRadius="6" BorderBrush="#996E5426" BorderThickness="1" Background="#B8120E0A" Padding="20,16">
           <StackPanel>
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -384,7 +384,7 @@ $fontes = ([Uri](Join-Path $Assets '/')).AbsoluteUri
         </Border>
 
         <!-- actions -->
-        <StackPanel Grid.Row="3" Margin="0,18,0,0">
+        <StackPanel Grid.Row="3" Margin="0,18,0,0" VerticalAlignment="Bottom">
           <StackPanel Orientation="Horizontal">
             <Button x:Name="BtnMaj" Content="Mettre à jour" Style="{StaticResource BoutonRouge}" Width="210"/>
             <Button x:Name="BtnVerifier" Content="Vérifier" Style="{StaticResource BoutonSombre}" Height="40" Margin="12,0,0,0"/>
