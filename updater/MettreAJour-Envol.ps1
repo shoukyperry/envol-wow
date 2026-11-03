@@ -23,7 +23,7 @@ param(
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$Depot = '__DEPOT__'   # rempli à la création du dépôt, ex. : pseudo/envol-wow
+$Depot = 'shoukyperry/envol-wow'   # rempli à la création du dépôt, ex. : pseudo/envol-wow
 $Dossier = Join-Path $env:LOCALAPPDATA 'Envol'
 $FichierConfig = Join-Path $Dossier 'config.json'
 $Journal = Join-Path $Dossier 'maj.log'
