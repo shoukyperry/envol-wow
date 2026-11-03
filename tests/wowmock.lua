@@ -98,9 +98,25 @@ C_QuestLog = {
 	GetQuestObjectives = function(q) return M.objectives[q] or {} end,
 	GetTitleForQuestID = function(q) return nil end,
 }
+M.itemDB, M.equipped, M.choices, M.bags = {}, {}, {}, {}
 C_Item = {
 	GetItemCount = function(i) return M.items[i] or 0 end,
 	GetItemNameByID = function(i) return "Objet" .. i end,
+	GetItemInfo = function(link)
+		local d = M.itemDB[link]
+		if not d then return nil end
+		return link, link, 2, 10, d.minLevel or 1, "", "", 1, d.loc, 0, d.sell or 0, d.class, d.sub
+	end,
+	GetItemStats = function(link) local d = M.itemDB[link]; return d and d.stats end,
+}
+function GetInventoryItemLink(_, slot) return M.equipped[slot] end
+function GetNumQuestChoices() return #M.choices end
+function GetQuestItemLink(_, i) return M.choices[i] end
+function GetQuestItemInfo(_, i) return "x", 0, 1 end
+function InCombatLockdown() return false end
+C_Container = {
+	GetContainerNumSlots = function(bag) return bag == 0 and #M.bags or 0 end,
+	GetContainerItemLink = function(bag, slot) return M.bags[slot] end,
 }
 C_Spell = { GetSpellName = function(s) return "Sort" .. s end }
 function IsPlayerSpell(s) return M.spells[s] == true end

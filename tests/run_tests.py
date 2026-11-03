@@ -120,5 +120,31 @@ for race, fac, lvl in [("Orc", "Horde", 35), ("Human", "Alliance", 47)]:
     name = L.execute("return Envol.GetMeta(Envol.PickStartGuide()).name")
     check(name and name.startswith(tuple(str(x) for x in range(lvl - 3, lvl + 1))), "%s %d -> %s" % (race, lvl, name))
 
+print("== Conseils d'équipement (Guerrier Armes niveau 10)")
+L.execute("""
+MOCK.class = 'WARRIOR'; MOCK.race = 'Orc'; MOCK.faction = 'Horde'; MOCK.level = 10
+Envol.player = {}; Envol.ResetConditionCache(); Envol.RefreshPlayer(); Envol.Gear.Invalidate()
+MOCK.itemDB['hache'] = { loc = 'INVTYPE_2HWEAPON', class = 2, sub = 1, stats = { ITEM_MOD_STRENGTH_SHORT = 5, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 8 } }
+MOCK.itemDB['vieille'] = { loc = 'INVTYPE_2HWEAPON', class = 2, sub = 1, stats = { ITEM_MOD_STRENGTH_SHORT = 1, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 5 } }
+MOCK.itemDB['plaques'] = { loc = 'INVTYPE_CHEST', class = 4, sub = 4, stats = { ITEM_MOD_STRENGTH_SHORT = 9 } }
+MOCK.itemDB['robe'] = { loc = 'INVTYPE_CHEST', class = 4, sub = 1, stats = { ITEM_MOD_INTELLECT_SHORT = 6 }, sell = 500 }
+MOCK.itemDB['cuir'] = { loc = 'INVTYPE_CHEST', class = 4, sub = 2, stats = { ITEM_MOD_STRENGTH_SHORT = 3, RESISTANCE0_NAME = 40 }, sell = 100 }
+MOCK.equipped[16] = 'vieille'
+""")
+spec = L.execute("return Envol.Gear.SpecLabel()")
+check(spec == "Auto (Armes)", "spé détectée : %s" % spec)
+r = L.execute("return Envol.Gear.Compare('hache')")
+check(r and r.upgrade and r.pct > 0, "hache 2M meilleure que l'arme portée (%+.1f %%)" % (r.pct if r else 0))
+r = L.execute("return Envol.Gear.Compare('plaques')")
+check(r and not r.usable and "40" in (r.reason or ""), "plaques avant 40 : %s" % (r and r.reason))
+L.execute("MOCK.choices = {'robe', 'cuir'}")
+best, up = L.execute("local b, u = Envol.Gear.BestReward(); return b, u")
+check(best == 2 and up, "récompense conseillée : choix %s (amélioration=%s)" % (best, up))
+L.execute("MOCK.bags = {'hache'}; Envol.Gear.Scan()")
+u = L.globals().Envol.Gear.upgrade
+check(u is not None and u.link == "hache", "amélioration repérée dans les sacs")
+lines = view_lines()
+check(any("Amélioration" in (t or "") for t in lines), "ligne « Amélioration » dans la fenêtre")
+
 print("\nRÉSULTAT :", "tout est bon" if ok else "des tests échouent")
 sys.exit(0 if ok else 1)

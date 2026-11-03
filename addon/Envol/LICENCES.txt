@@ -23,7 +23,11 @@ et aucun des deux n'a approuvé cette adaptation. Usage personnel, non commercia
    « Era » en coordonnées du monde, textes français reconstitués depuis les traductions et
    les noms français fournis par Polestar.
 
-Code d'Envol (Core.lua, Engine.lua, Arrow.lua, UI.lua) et texture Media/Fleche.tga :
+3) Poids de statistiques (Data/Equipement.lua)
+   Source : Polestar Guides, Gear/SpecData.lua (GPLv3), qui mélange ses poids de leveling et des
+   simulations wowsims (https://github.com/wowsims, licence MIT).
+
+Code d'Envol (Core.lua, Engine.lua, Gear.lua, Arrow.lua, UI.lua) et texture Media/Fleche.tga :
 écrits pour Envol.
 
 Note : les licences CC BY-NC-SA et GPL ne sont pas compatibles entre elles pour une

@@ -127,3 +127,43 @@ def tables_after(text, marker):
             pos = p.i
         else:
             pos = j + len(marker)
+
+
+# ---- écriture de tables Lua (données générées) ----
+IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+RESERVED = {"and", "break", "do", "else", "elseif", "end", "false", "for", "function", "if", "in", "local",
+            "nil", "not", "or", "repeat", "return", "then", "true", "until", "while"}
+
+
+def lstr(s):
+    s = s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "")
+    return '"' + s + '"'
+
+
+def ser(v):
+    if v is None:
+        return "nil"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        r = ("%.3f" % v).rstrip("0").rstrip(".")
+        return r if r not in ("", "-") else "0"
+    if isinstance(v, str):
+        return lstr(v)
+    if isinstance(v, list):
+        return "{" + ",".join(ser(x) for x in v) + "}"
+    if isinstance(v, dict):
+        parts = []
+        for k, x in v.items():
+            if x is None:
+                continue
+            if isinstance(k, str) and IDENT.match(k) and k not in RESERVED:
+                parts.append(k + "=" + ser(x))
+            else:
+                parts.append("[" + ser(k) + "]=" + ser(x))
+        return "{" + ",".join(parts) + "}"
+    raise TypeError(type(v))
+
+

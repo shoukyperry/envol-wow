@@ -23,6 +23,16 @@ UTILISATION
   en parlant au PNJ pour l'empêcher ; quand il faut choisir une récompense, c'est vous qui choisissez).
 - Bas de fenêtre : XP par heure et temps estimé avant le prochain niveau.
 
+ÉQUIPEMENT (comme Pawn)
+- Infobulle de chaque objet : « Envol · Armes : +12,4 % · amélioration » (vert), « moins bien » (rouge),
+  ou la raison pour laquelle votre classe ne peut pas le porter.
+- Les notes suivent votre spé (détectée par vos points de talent, ou choisie dans les réglages)
+  et votre niveau : les poids changent par tranche de niveau.
+- Récompenses de quête : une flèche verte marque la meilleure ; jaune quand aucune n'est une
+  amélioration (c'est alors celle qui se revend le plus cher). Option : la choisir automatiquement.
+- Sacs : quand vous ramassez une amélioration, une ligne apparaît dans la fenêtre d'Envol ;
+  cliquez dessus pour l'équiper.
+
 COMMANDES
 /envol             afficher / masquer la fenêtre
 /envol routes      choisir une autre route
@@ -30,6 +40,8 @@ COMMANDES
 /envol s           étape suivante        /envol p   étape précédente
 /envol flèche      afficher / masquer la flèche
 /envol reset       laisser Envol rechoisir la route selon votre race et votre niveau
+/envol équipement  spé utilisée et meilleure amélioration dans vos sacs
+/envol version     version installée et date des routes
 
 LES ROUTES
 - Niveaux 1 à ~20-22 : routes RestedXP publiques (speedrunners, testées pendant la bêta),

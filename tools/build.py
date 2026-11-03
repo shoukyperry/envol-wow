@@ -37,7 +37,7 @@ env.setdefault("ENVOL_WORK", "work")
 env.setdefault("ENVOL_ADDON", "addon/Envol")
 
 py = [sys.executable, "-I"]
-for step in ("dump_polestar.py", "build_rxp.py", "build_ps.py", "build_lua.py"):
+for step in ("dump_polestar.py", "build_rxp.py", "build_ps.py", "build_lua.py", "build_gear.py"):
     run(*py, os.path.join("tools", step), env=env, stdout=subprocess.DEVNULL if step == "build_rxp.py" else None)
 
 addon = env["ENVOL_ADDON"]

@@ -94,7 +94,8 @@ local function getLine(n)
 	l.text:SetJustifyV("TOP")
 	l.text:SetWordWrap(true)
 	l:SetScript("OnClick", function(self)
-		if self.stepIdx and self.gi then E.ToggleGoal(self.stepIdx, self.gi) end
+		if self.onClick then self.onClick()
+		elseif self.stepIdx and self.gi then E.ToggleGoal(self.stepIdx, self.gi) end
 	end)
 	l:SetScript("OnEnter", function(self)
 		if self.clickHint then
@@ -127,7 +128,8 @@ local function addLine(text, icon, opts)
 		l.text:SetPoint("TOPLEFT", 0, 0)
 	end
 	l.stepIdx, l.gi, l.clickHint = opts and opts.stepIdx, opts and opts.gi, opts and opts.hint
-	l:EnableMouse(l.stepIdx ~= nil)
+	l.onClick = opts and opts.onClick
+	l:EnableMouse(l.stepIdx ~= nil or l.onClick ~= nil)
 	local h = math.max(l.text:GetStringHeight(), 14)
 	l:SetHeight(h)
 	l:Show()
@@ -250,6 +252,15 @@ function E.UpdateUI()
 				if v.state == "manual" then
 					addSpacer(2)
 					addLine(COLOR_DIM .. "Quand c'est fait, cliquez sur « > » (suivant).|r", nil, { font = "GameFontHighlightSmall" })
+				end
+				local up = EnvolDB.gear and E.Gear and E.Gear.upgrade
+				if up then
+					addSpacer(4)
+					addLine(COLOR_OK .. "Amélioration : |r" .. up.link .. COLOR_OK ..
+						string.format(" (%+.1f %%)", up.pct):gsub("%.", ",") .. "|r — cliquez pour l'équiper",
+						"Interface\\AddOns\\Envol\\Media\\Fleche",
+						{ font = "GameFontHighlightSmall", onClick = E.Gear.EquipUpgrade,
+							hint = "Équipe cet objet de vos sacs (hors combat)." })
 				end
 				if EnvolChar.hold == v.idx then
 					addLine(COLOR_DIM .. "Navigation manuelle : « > » pour reprendre le guidage.|r", nil, { font = "GameFontHighlightSmall" })
@@ -533,7 +544,7 @@ end
 
 function E.ToggleOptions()
 	if not options then
-		options = newPanel("EnvolOptions", 400, 360)
+		options = newPanel("EnvolOptions", 400, 452)
 		options:SetFrameStrata("DIALOG")
 		options:SetPoint("CENTER")
 		options:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
@@ -557,17 +568,30 @@ function E.ToggleOptions()
 		items[#items + 1] = checkbox(options, "Commencer par les routes RestedXP (sinon : Polestar seul)",
 			"RestedXP : routes de speedrunners, testées, jusqu'au niveau 20-22. Ensuite Envol enchaîne avec Polestar. S'applique au prochain choix automatique de route.",
 			function() return D.source ~= "ps" end, function(v) D.source = v and "rxp" or "ps" end, -152)
+		items[#items + 1] = checkbox(options, "Conseils d'équipement (infobulles, récompenses, sacs)",
+			"Comme Pawn : compare chaque objet à ce que vous portez, selon votre spé et votre niveau.",
+			function() return D.gear end, function(v) D.gear = v; E.Gear.Invalidate() end, -180)
+		items[#items + 1] = checkbox(options, "Choisir automatiquement la meilleure récompense",
+			"Pour les quêtes de la route rendues automatiquement : l'amélioration la plus forte, sinon l'objet qui se revend le plus cher.",
+			function() return D.autoReward end, function(v) D.autoReward = v end, -208)
+		local specBtn = textButton(options, "", 170, "Spé utilisée pour noter les objets. Auto = celle où vous avez mis le plus de points.", nil)
+		specBtn:SetPoint("TOPLEFT", 220, -238)
+		local specLbl = options:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		specLbl:SetPoint("TOPLEFT", 14, -242)
+		specLbl:SetText("Spé pour l'équipement")
+		local function refreshSpec() specBtn:SetText(E.Gear.SpecLabel()) end
+		specBtn:SetScript("OnClick", function() E.Gear.CycleSpec(); refreshSpec() end)
 		local r1 = stepper(options, "Taille de la fenêtre", function() return D.scale end,
-			function(v) D.scale = v; E.ApplyScale() end, -190)
+			function(v) D.scale = v; E.ApplyScale() end, -270)
 		local r2 = stepper(options, "Taille de la flèche", function() return D.arrowScale end,
-			function(v) D.arrowScale = v; E.ApplyScale() end, -218)
+			function(v) D.arrowScale = v; E.ApplyScale() end, -298)
 		local reset = textButton(options, "Choisir la route automatiquement", 230,
 			"Abandonne la route actuelle et laisse Envol choisir celle qui correspond à votre race et votre niveau.",
 			function()
 				local id = E.PickStartGuide()
 				if id then E.OpenGuide(id, 1); E.Print("route choisie : " .. E.Expand(E.GetMeta(id).name)) end
 			end)
-		reset:SetPoint("TOPLEFT", 14, -256)
+		reset:SetPoint("TOPLEFT", 14, -336)
 		local credit = options:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 		credit:SetPoint("BOTTOMLEFT", 12, 10)
 		credit:SetWidth(376)
@@ -583,7 +607,7 @@ function E.ToggleOptions()
 			"Envol n'est affilié à aucun des deux. /envol aide pour les commandes.|r")
 		options.refresh = function()
 			for _, cb in ipairs(items) do cb.refresh() end
-			r1(); r2()
+			r1(); r2(); refreshSpec()
 		end
 		options:Hide()
 	end
@@ -610,6 +634,8 @@ SlashCmdList.ENVOL = function(msg)
 	elseif msg == "fleche" or msg == "flèche" then
 		EnvolDB.arrow = not EnvolDB.arrow
 		E.Print("flèche " .. (EnvolDB.arrow and "affichée" or "masquée"))
+	elseif msg == "équipement" or msg == "equipement" or msg == "stuff" then
+		E.Gear.Report()
 	elseif msg == "version" then
 		local b = E.BuildInfo()
 		E.Print("version " .. b.version .. " · routes du " .. E.FormatDate(b.date) ..
@@ -625,6 +651,7 @@ SlashCmdList.ENVOL = function(msg)
 		E.Print("/envol suivant (ou s) — étape suivante · /envol précédent (ou p) — étape précédente")
 		E.Print("/envol flèche — afficher / masquer la flèche")
 		E.Print("/envol reset — laisser Envol choisir la route selon votre race et votre niveau")
+		E.Print("/envol équipement — spé utilisée et meilleure amélioration dans vos sacs")
 		E.Print("/envol version — version installée et date des routes")
 	end
 end

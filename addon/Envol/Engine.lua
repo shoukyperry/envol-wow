@@ -608,7 +608,20 @@ local function onQuestComplete()
 	local q = questIdOfFrame()
 	if q and visibleQuestGoals("t")[q] then
 		local choices = safe(GetNumQuestChoices) or 0
-		if choices <= 1 then pcall(GetQuestReward, choices) end
+		if choices <= 1 then
+			pcall(GetQuestReward, choices)
+		elseif EnvolDB.autoReward and EnvolDB.gear and E.Gear then
+			-- les objets des récompenses arrivent parfois un peu après la fenêtre
+			local function pick(tries)
+				local best, _, _, pending = E.Gear.BestReward()
+				if pending and tries < 5 then
+					C_Timer.After(0.3, function() pick(tries + 1) end)
+				elseif best then
+					pcall(GetQuestReward, best)
+				end
+			end
+			pick(0)
+		end
 	end
 end
 
