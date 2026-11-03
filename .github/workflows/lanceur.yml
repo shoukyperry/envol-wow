@@ -2,7 +2,7 @@ name: Tester le lanceur (Windows)
 
 on:
   push:
-    paths: ["lanceur/**", ".github/workflows/lanceur.yml"]
+    paths: ["lanceur/**", ".github/workflows/lanceur.yml", "tools/raccourci.py"]
   workflow_dispatch: {}
 
 permissions:
@@ -22,15 +22,44 @@ jobs:
           if ($err) { $err | ForEach-Object { Write-Error $_.ToString() }; exit 1 }
           "Syntaxe OK"
 
-      - name: Ouvrir la fenêtre et la capturer (Windows PowerShell 5.1, comme sur le PC)
+      - name: Installer comme sur le PC (chemin avec espaces)
         shell: powershell
         run: |
+          $d = 'C:\World of Warcraft\_forever_\Envol-Lanceur'
+          New-Item -ItemType Directory -Force -Path $d, 'C:\World of Warcraft\_forever_\Interface\AddOns' | Out-Null
+          Copy-Item -Recurse -Force lanceur\* $d
           New-Item -ItemType Directory -Force -Path captures | Out-Null
+
+      - name: Raccourci créé comme sur le PC (pylnk3)
+        shell: bash
+        run: |
+          pip install -q pylnk3
+          python tools/raccourci.py "C:\\World of Warcraft\\_forever_\\Envol-Lanceur" captures/Envol.lnk
+
+      - name: Lancer via le .vbs, puis via le raccourci
+        shell: powershell
+        run: |
+          $ok = $true
+          foreach ($cas in @(
+              @{ nom = 'vbs'; f = { Start-Process 'C:\World of Warcraft\_forever_\Envol-Lanceur\Lancer Envol.vbs' } },
+              @{ nom = 'raccourci'; f = { Start-Process "$PWD\captures\Envol.lnk" } })) {
+            $env:ENVOL_CAPTURE = "$PWD\captures\$($cas.nom).png"
+            & $cas.f
+            $t = 0
+            while (-not (Test-Path $env:ENVOL_CAPTURE) -and $t -lt 60) { Start-Sleep 1; $t++ }
+            if (Test-Path $env:ENVOL_CAPTURE) { "OK : $($cas.nom) ($t s)" } else { "ÉCHEC : $($cas.nom)"; $ok = $false }
+          }
+          $log = 'C:\World of Warcraft\_forever_\Envol-Lanceur\erreur.log'
+          if (Test-Path $log) { Get-Content $log; Copy-Item $log captures\ }
+          Get-Process powershell, wscript -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, StartTime | Out-String
+          if (-not $ok) { exit 1 }
+
+      - name: Captures de contrôle
+        shell: powershell
+        run: |
           foreach ($nom in 'principale', 'cle') {
             $env:ENVOL_CAPTURE = "$PWD\captures\$nom.png"
-            $p = Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-STA','-File',"$PWD\lanceur\Envol.ps1" -PassThru -Wait -RedirectStandardError "captures\$nom-erreurs.txt"
-            if (-not (Test-Path $env:ENVOL_CAPTURE)) { Get-Content "captures\$nom-erreurs.txt"; throw "pas de capture $nom (code $($p.ExitCode))" }
-            "Capture $nom : $((Get-Item $env:ENVOL_CAPTURE).Length) octets"
+            Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-STA','-File',"`"C:\World of Warcraft\_forever_\Envol-Lanceur\Envol.ps1`"" -Wait
           }
 
       - name: Publier les captures sur la branche « captures »

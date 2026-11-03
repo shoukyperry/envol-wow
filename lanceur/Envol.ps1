@@ -19,6 +19,19 @@ $Demarrage     = Join-Path ([Environment]::GetFolderPath('Startup')) 'Envol - mi
 $PageJeton     = 'https://github.com/settings/personal-access-tokens/new'
 New-Item -ItemType Directory -Force -Path $Dossier | Out-Null
 
+# Toute erreur non prévue : écrite dans erreur.log (à côté du lanceur) et affichée
+trap {
+    $msg = "{0:yyyy-MM-dd HH:mm:ss}  {1}`r`n{2}`r`n" -f (Get-Date), $_.Exception.ToString(), $_.InvocationInfo.PositionMessage
+    try { Add-Content -Path (Join-Path $Ici 'erreur.log') -Value $msg -Encoding UTF8 } catch {}
+    if (-not $Silencieux) {
+        try {
+            Add-Type -AssemblyName PresentationFramework
+            [System.Windows.MessageBox]::Show("Envol n'a pas pu démarrer :`r`n`r`n" + $_.Exception.Message, 'Envol', 'OK', 'Error') | Out-Null
+        } catch {}
+    }
+    exit 1
+}
+
 function Ecrire-Journal([string]$texte) {
     Add-Content -Path $Journal -Value ('{0:yyyy-MM-dd HH:mm}  {1}' -f (Get-Date), $texte) -Encoding UTF8
 }
