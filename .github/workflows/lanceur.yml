@@ -5,6 +5,9 @@ on:
     paths: ["lanceur/**", ".github/workflows/lanceur.yml"]
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -30,8 +33,12 @@ jobs:
             "Capture $nom : $((Get-Item $env:ENVOL_CAPTURE).Length) octets"
           }
 
-      - uses: actions/upload-artifact@v4
+      - name: Publier les captures sur la branche « captures »
         if: always()
-        with:
-          name: captures
-          path: captures/
+        shell: bash
+        run: |
+          cd captures
+          git init -q -b captures
+          git -c user.name=envol-bot -c user.email=envol-bot@users.noreply.github.com add -A
+          git -c user.name=envol-bot -c user.email=envol-bot@users.noreply.github.com commit -qm "Captures du lanceur"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" captures
