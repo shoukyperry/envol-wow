@@ -19,22 +19,92 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Outils de test
-        run: pip install lupa
-
+        run: pip install lupa pylnk3
       - name: Construire et tester (routes RestedXP + Polestar à jour)
         run: python tools/build.py
-
-      - name: Empaqueter le lanceur
+      - name: Empaqueter le lanceur et un raccourci de test
         run: |
           mkdir -p pkg/Envol-Lanceur && cp -r lanceur/* pkg/Envol-Lanceur/
           (cd pkg && zip -qr ../dist/Envol-Lanceur.zip Envol-Lanceur)
+          python tools/raccourci.py "C:\\World of Warcraft\\_forever_\\Envol-Lanceur" dist/Envol-test.lnk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
+  windows:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Installer comme sur le PC (chemin avec espaces)
+        shell: powershell
+        run: |
+          $f = 'C:\World of Warcraft\_forever_'
+          New-Item -ItemType Directory -Force -Path "$f\Interface\AddOns", captures | Out-Null
+          Expand-Archive dist\Envol.zip "$f\Interface\AddOns" -Force
+          Expand-Archive dist\Envol-Lanceur.zip $f -Force
+          Get-ChildItem "$f\Interface\AddOns\Envol\Lanceur" | Select-Object Name, Length | Format-Table | Out-String
+      - name: Syntaxe PowerShell 5.1
+        shell: powershell
+        run: |
+          $err = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('C:\World of Warcraft\_forever_\Envol-Lanceur\Envol.ps1', [ref]$null, [ref]$err) | Out-Null
+          if ($err) { $err | ForEach-Object { Write-Error $_.ToString() }; exit 1 }
+          "Syntaxe OK"
+      - name: Lancer via le .vbs et via un raccourci
+        shell: powershell
+        run: |
+          $ok = $true
+          foreach ($cas in @(
+              @{ nom = 'vbs'; f = { Start-Process 'C:\World of Warcraft\_forever_\Envol-Lanceur\Lancer Envol.vbs' } },
+              @{ nom = 'raccourci'; f = { Start-Process "$PWD\dist\Envol-test.lnk" } })) {
+            $env:ENVOL_CAPTURE = "$PWD\captures\lancement-$($cas.nom).png"
+            & $cas.f
+            $t = 0
+            while (-not (Test-Path $env:ENVOL_CAPTURE) -and $t -lt 60) { Start-Sleep 1; $t++ }
+            if (Test-Path $env:ENVOL_CAPTURE) { "OK : $($cas.nom) ($t s)" } else { "ÉCHEC : $($cas.nom)"; $ok = $false }
+          }
+          if (-not $ok) { exit 1 }
+      - name: Captures des 4 écrans
+        shell: powershell
+        run: |
+          $ok = $true
+          foreach ($nom in 'principale', 'cle', 'parcours', 'equipement') {
+            $env:ENVOL_CAPTURE = "$PWD\captures\$nom.png"
+            Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-STA','-File','"C:\World of Warcraft\_forever_\Envol-Lanceur\Envol.ps1"' -Wait
+            if (Test-Path $env:ENVOL_CAPTURE) { "OK : $nom" } else { "ÉCHEC : $nom"; $ok = $false }
+          }
+          $log = 'C:\World of Warcraft\_forever_\Envol-Lanceur\erreur.log'
+          if (Test-Path $log) { "--- erreur.log ---"; Get-Content $log; Copy-Item $log captures\; $ok = $false }
+          if (-not $ok) { exit 1 }
+      - name: Publier les captures sur la branche « captures »
+        if: always()
+        shell: bash
+        run: |
+          cd captures
+          git init -q -b captures
+          git -c user.name=envol-bot -c user.email=envol-bot@users.noreply.github.com add -A
+          git -c user.name=envol-bot -c user.email=envol-bot@users.noreply.github.com commit -qm "Captures du lanceur"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" captures
+
+  publish:
+    needs: [build, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
       - name: Publier si quelque chose a changé
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,10 +116,10 @@ jobs:
             echo "Rien de nouveau (empreinte $HASH) : pas de nouvelle version."
             exit 0
           fi
-          NOTES="Routes RestedXP $(grep -o 'rxp = "[^"]*"' addon/Envol/Data/Version.lua | cut -d'"' -f2), Polestar $(grep -o 'ps = "[^"]*"' addon/Envol/Data/Version.lua | cut -d'"' -f2).
+          unzip -p dist/Envol.zip Envol/Data/Version.lua > /tmp/v.lua
+          NOTES="Routes RestedXP $(grep -o 'rxp = "[^"]*"' /tmp/v.lua | cut -d'"' -f2), Polestar $(grep -o 'ps = "[^"]*"' /tmp/v.lua | cut -d'"' -f2).
           empreinte: $HASH"
           gh release create "v$VERSION" dist/Envol.zip dist/Envol-Lanceur.zip --title "Envol $VERSION" --notes "$NOTES" --latest
-          # on ne garde que les 10 dernières versions
           gh release list --limit 100 --json tagName --jq '.[10:][].tagName' | while read -r t; do
             gh release delete "$t" --yes --cleanup-tag || true
           done
