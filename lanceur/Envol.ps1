@@ -585,6 +585,24 @@ $ui.BtnEnregistrerCle.Add_Click({
     Actualiser
 })
 
+# Raccourci du bureau : recréé par Windows lui-même s'il manque ou pointe ailleurs
+try {
+    $bureau = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Envol.lnk'
+    $vbs = Join-Path $Ici 'Lancer Envol.vbs'
+    $sh = New-Object -ComObject WScript.Shell
+    $ok = $false
+    if (Test-Path $bureau) { $ok = ($sh.CreateShortcut($bureau).Arguments -like "*$vbs*") }
+    if (-not $ok) {
+        $lnk = $sh.CreateShortcut($bureau)
+        $lnk.TargetPath = Join-Path $env:WINDIR 'System32\wscript.exe'
+        $lnk.Arguments = '"' + $vbs + '"'
+        $lnk.WorkingDirectory = $Ici
+        $lnk.IconLocation = (Join-Path $Assets 'Envol.ico') + ',0'
+        $lnk.Description = "Envol : mise à jour de l'addon WoW Forever"
+        $lnk.Save()
+    }
+} catch {}
+
 $ui.ChkAuto.IsChecked = MAJ-Auto-Active
 $ui.ChkAuto.Add_Click({
     try {
