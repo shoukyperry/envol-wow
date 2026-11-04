@@ -585,14 +585,13 @@ $ui.BtnEnregistrerCle.Add_Click({
     Actualiser
 })
 
-# Raccourci du bureau : recréé par Windows lui-même s'il manque ou pointe ailleurs
+# Raccourci du bureau : (re)créé par Windows lui-même à chaque ouverture
 try {
     $bureau = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Envol.lnk'
     $vbs = Join-Path $Ici 'Lancer Envol.vbs'
     $sh = New-Object -ComObject WScript.Shell
-    $ok = $false
-    if (Test-Path $bureau) { $ok = ($sh.CreateShortcut($bureau).Arguments -like "*$vbs*") }
-    if (-not $ok) {
+    # toujours réécrit par Windows : un raccourci fabriqué ailleurs peut être illisible
+    if ($true) {
         $lnk = $sh.CreateShortcut($bureau)
         $lnk.TargetPath = Join-Path $env:WINDIR 'System32\wscript.exe'
         $lnk.Arguments = '"' + $vbs + '"'
