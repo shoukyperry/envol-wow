@@ -859,7 +859,7 @@ function Afficher-Parcours {
         $li.Content = $sp; $li.Tag = $r
         [void]$ui.ListeRoutes.Items.Add($li)
     }
-    $ui.TxtResumeParcours.Text = "Votre parcours : $(@($liste).Count) étapes de route, du niveau 1 au 60"
+    $ui.TxtResumeParcours.Text = "Votre parcours : $(@($liste).Count) routes, niveau 1 → 60"
     if ($ui.ListeRoutes.Items.Count -gt 0) { $ui.ListeRoutes.SelectedIndex = 0 }
 }
 
