@@ -204,5 +204,50 @@ check(u is not None and u.link == "hache", "amélioration repérée dans les sac
 lines = view_lines()
 check(any("Amélioration" in (t or "") for t in lines), "ligne « Amélioration » dans la fenêtre")
 
+print("== Talents : build choisi et apprentissage automatique (Guerrier niveau 12)")
+L.execute("""
+local d = EnvolData.talents.WARRIOR
+local entryToSpell = {}
+for nid, n in pairs(d.nodes) do entryToSpell[n[1]] = n[3] end
+MOCK.ranks, MOCK.points, MOCK.commits = {}, 3, 0
+C_ClassTalents = { GetActiveConfigID = function() return 7 end }
+C_Traits = {
+  GetTreeNodes = function() local t = {} for nid in pairs(d.nodes) do t[#t + 1] = nid end return t end,
+  GetNodeInfo = function(_, nid) local n = d.nodes[nid]; if not n then return nil end
+    return { currentRank = MOCK.ranks[nid] or 0, maxRanks = n[2], entryIDs = { n[1] }, canPurchaseRank = true } end,
+  GetEntryInfo = function(_, e) return { definitionID = e } end,
+  GetDefinitionInfo = function(e) return { spellID = entryToSpell[e] } end,
+  GetTreeCurrencyInfo = function() return { { quantity = MOCK.points } } end,
+  PurchaseRank = function(_, nid) if MOCK.points <= 0 then return false end
+    MOCK.ranks[nid] = (MOCK.ranks[nid] or 0) + 1; MOCK.points = MOCK.points - 1; return true end,
+  CommitConfig = function() MOCK.commits = MOCK.commits + 1; return true end,
+}
+MOCK.class = 'WARRIOR'; MOCK.level = 12
+Envol.player = {}; Envol.RefreshPlayer()
+EnvolChar.talentBuild = nil
+""")
+n = L.execute("return #Envol.Talents.Builds()")
+check(n == 3, "3 builds proposés pour le Guerrier (%d)" % n)
+lab = L.execute("return Envol.Talents.Cycle()")
+check(lab != "Aucun", "choix du build : %s" % lab)
+hint = L.execute("EnvolDB.autoTalents = false; return Envol.Talents.Hint()")
+check(hint and "Talent à prendre" in hint, "conseil sans apprentissage auto : %s" % hint)
+L.execute("EnvolDB.autoTalents = true")
+nb = L.execute("return Envol.Talents.Apply()")
+pts, commits = L.execute("return MOCK.points, MOCK.commits")
+check(nb == 3 and pts == 0 and commits == 1, "3 points dépensés dans l'ordre du build, 1 validation (%s, %s, %s)" % (nb, pts, commits))
+first = L.execute("local b = Envol.Talents.Current(); return MOCK.ranks[b.picks[1][1]] or 0")
+check(first >= 1, "premier talent du build appris")
+L.execute("InCombatLockdown = function() return true end; MOCK.points = 1")
+nb = L.execute("return Envol.Talents.Apply()")
+check(nb == 0 and L.execute("return Envol.Talents.pending") == True, "en combat : rien, report à la sortie de combat")
+L.execute("InCombatLockdown = function() return false end")
+M.Fire("PLAYER_REGEN_ENABLED")
+L.execute("MOCK.RunTimers()")
+check(L.execute("return MOCK.points") == 0, "point dépensé après le combat")
+for _ in range(3):
+    L.execute("Envol.Talents.Cycle()")
+check(L.execute("return Envol.Talents.Label()") == "Aucun", "le cycle revient à « Aucun »")
+
 print("\nRÉSULTAT :", "tout est bon" if ok else "des tests échouent")
 sys.exit(0 if ok else 1)

@@ -273,6 +273,11 @@ function E.UpdateUI()
 					addSpacer(2)
 					addLine(COLOR_DIM .. "Quand c'est fait, cliquez sur « > » (suivant).|r", nil, { font = "GameFontHighlightSmall" })
 				end
+				local hint = (not EnvolDB.autoTalents) and E.Talents and E.Talents.Hint()
+				if hint then
+					addSpacer(4)
+					addLine("|cffc59bff" .. hint .. "|r", nil, { font = "GameFontHighlightSmall" })
+				end
 				local up = EnvolDB.gear and E.Gear and E.Gear.upgrade
 				if up then
 					addSpacer(4)
@@ -564,7 +569,7 @@ end
 
 function E.ToggleOptions()
 	if not options then
-		options = newPanel("EnvolOptions", 400, 540)
+		options = newPanel("EnvolOptions", 400, 610)
 		options:SetFrameStrata("DIALOG")
 		options:SetPoint("CENTER")
 		options:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
@@ -613,17 +618,27 @@ function E.ToggleOptions()
 		items[#items + 1] = checkbox(options, "Flèche en relief (3D, posée au sol)",
 			"Décoché : flèche plate. Sans effet sur le style Classique.",
 			function() return D.arrow3D ~= false end, function(v) D.arrow3D = v; E.ApplyArrowStyle() end, -324)
+		local talBtn = textButton(options, "", 170, "Build de talents pour Forever (choix d'après ForeverDB et Polestar). Clic pour changer.", nil)
+		talBtn:SetPoint("TOPLEFT", 220, -356)
+		local talLbl = options:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		talLbl:SetPoint("TOPLEFT", 14, -360)
+		talLbl:SetText("Build de talents")
+		local function refreshTal() talBtn:SetText(E.Talents.Label()) end
+		talBtn:SetScript("OnClick", function() E.Talents.Cycle(); refreshTal(); E.UpdateUI() end)
+		items[#items + 1] = checkbox(options, "Apprendre automatiquement les talents du build",
+			"À chaque point disponible (hors combat), Envol apprend le talent suivant du build. Il ne désapprend jamais rien.",
+			function() return D.autoTalents end, function(v) D.autoTalents = v; if v then E.Talents.Apply() end end, -384)
 		local r1 = stepper(options, "Taille de la fenêtre", function() return D.scale end,
-			function(v) D.scale = v; E.ApplyScale() end, -358)
+			function(v) D.scale = v; E.ApplyScale() end, -424)
 		local r2 = stepper(options, "Taille de la flèche", function() return D.arrowScale end,
-			function(v) D.arrowScale = v; E.ApplyScale() end, -386)
+			function(v) D.arrowScale = v; E.ApplyScale() end, -452)
 		local reset = textButton(options, "Choisir la route automatiquement", 230,
 			"Abandonne la route actuelle et laisse Envol choisir celle qui correspond à votre race et votre niveau.",
 			function()
 				local id = E.PickStartGuide()
 				if id then E.OpenGuide(id, 1); E.Print("route choisie : " .. E.Expand(E.GetMeta(id).name)) end
 			end)
-		reset:SetPoint("TOPLEFT", 14, -424)
+		reset:SetPoint("TOPLEFT", 14, -490)
 		local credit = options:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 		credit:SetPoint("BOTTOMLEFT", 12, 10)
 		credit:SetWidth(376)
@@ -639,7 +654,7 @@ function E.ToggleOptions()
 			"Envol n'est affilié à aucun des deux. /envol aide pour les commandes.|r")
 		options.refresh = function()
 			for _, cb in ipairs(items) do cb.refresh() end
-			r1(); r2(); refreshSpec(); refreshStyle()
+			r1(); r2(); refreshSpec(); refreshStyle(); refreshTal()
 		end
 		options:Hide()
 	end
@@ -666,6 +681,8 @@ SlashCmdList.ENVOL = function(msg)
 	elseif msg == "fleche" or msg == "flèche" then
 		EnvolDB.arrow = not EnvolDB.arrow
 		E.Print("flèche " .. (EnvolDB.arrow and "affichée" or "masquée"))
+	elseif msg == "talents" or msg == "talent" then
+		E.Talents.Report()
 	elseif msg == "style" then
 		E.Print("style de la flèche : " .. E.CycleArrowStyle())
 	elseif msg == "équipement" or msg == "equipement" or msg == "stuff" then
@@ -686,6 +703,7 @@ SlashCmdList.ENVOL = function(msg)
 		E.Print("/envol flèche — afficher / masquer la flèche · /envol style — changer sa couleur")
 		E.Print("/envol reset — laisser Envol choisir la route selon votre race et votre niveau")
 		E.Print("/envol équipement — spé utilisée et meilleure amélioration dans vos sacs")
+		E.Print("/envol talents — build choisi et prochain talent")
 		E.Print("/envol version — version installée et date des routes")
 	end
 end
