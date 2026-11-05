@@ -544,7 +544,7 @@ end
 
 function E.ToggleOptions()
 	if not options then
-		options = newPanel("EnvolOptions", 400, 452)
+		options = newPanel("EnvolOptions", 400, 512)
 		options:SetFrameStrata("DIALOG")
 		options:SetPoint("CENTER")
 		options:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
@@ -581,17 +581,26 @@ function E.ToggleOptions()
 		specLbl:SetText("Spé pour l'équipement")
 		local function refreshSpec() specBtn:SetText(E.Gear.SpecLabel()) end
 		specBtn:SetScript("OnClick", function() E.Gear.CycleSpec(); refreshSpec() end)
+		local styleBtn = textButton(options, "", 170, "Couleur de la flèche (clic pour changer). « Classique » : l'ancienne flèche blanche.", nil)
+		styleBtn:SetPoint("TOPLEFT", 220, -268)
+		local styleLbl = options:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		styleLbl:SetPoint("TOPLEFT", 14, -272)
+		styleLbl:SetText("Style de la flèche")
+		local function refreshStyle() styleBtn:SetText(D.arrowStyle or "Arcane") end
+		styleBtn:SetScript("OnClick", function() E.CycleArrowStyle(); refreshStyle() end)
+		items[#items + 1] = checkbox(options, "Halo de direction (vert = bonne direction, rouge = demi-tour)", nil,
+			function() return D.arrowHalo ~= false end, function(v) D.arrowHalo = v end, -296)
 		local r1 = stepper(options, "Taille de la fenêtre", function() return D.scale end,
-			function(v) D.scale = v; E.ApplyScale() end, -270)
+			function(v) D.scale = v; E.ApplyScale() end, -330)
 		local r2 = stepper(options, "Taille de la flèche", function() return D.arrowScale end,
-			function(v) D.arrowScale = v; E.ApplyScale() end, -298)
+			function(v) D.arrowScale = v; E.ApplyScale() end, -358)
 		local reset = textButton(options, "Choisir la route automatiquement", 230,
 			"Abandonne la route actuelle et laisse Envol choisir celle qui correspond à votre race et votre niveau.",
 			function()
 				local id = E.PickStartGuide()
 				if id then E.OpenGuide(id, 1); E.Print("route choisie : " .. E.Expand(E.GetMeta(id).name)) end
 			end)
-		reset:SetPoint("TOPLEFT", 14, -336)
+		reset:SetPoint("TOPLEFT", 14, -396)
 		local credit = options:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 		credit:SetPoint("BOTTOMLEFT", 12, 10)
 		credit:SetWidth(376)
@@ -607,7 +616,7 @@ function E.ToggleOptions()
 			"Envol n'est affilié à aucun des deux. /envol aide pour les commandes.|r")
 		options.refresh = function()
 			for _, cb in ipairs(items) do cb.refresh() end
-			r1(); r2(); refreshSpec()
+			r1(); r2(); refreshSpec(); refreshStyle()
 		end
 		options:Hide()
 	end
@@ -634,6 +643,8 @@ SlashCmdList.ENVOL = function(msg)
 	elseif msg == "fleche" or msg == "flèche" then
 		EnvolDB.arrow = not EnvolDB.arrow
 		E.Print("flèche " .. (EnvolDB.arrow and "affichée" or "masquée"))
+	elseif msg == "style" then
+		E.Print("style de la flèche : " .. E.CycleArrowStyle())
 	elseif msg == "équipement" or msg == "equipement" or msg == "stuff" then
 		E.Gear.Report()
 	elseif msg == "version" then
@@ -649,7 +660,7 @@ SlashCmdList.ENVOL = function(msg)
 		E.Print("/envol routes — choisir une route")
 		E.Print("/envol réglages — options")
 		E.Print("/envol suivant (ou s) — étape suivante · /envol précédent (ou p) — étape précédente")
-		E.Print("/envol flèche — afficher / masquer la flèche")
+		E.Print("/envol flèche — afficher / masquer la flèche · /envol style — changer sa couleur")
 		E.Print("/envol reset — laisser Envol choisir la route selon votre race et votre niveau")
 		E.Print("/envol équipement — spé utilisée et meilleure amélioration dans vos sacs")
 		E.Print("/envol version — version installée et date des routes")

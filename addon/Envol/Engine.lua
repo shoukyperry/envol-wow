@@ -732,6 +732,7 @@ boot:SetScript("OnEvent", function()
 	EnvolChar = EnvolChar or {}
 	local d = EnvolDB
 	if d.arrow == nil then d.arrow = true end
+	if d.arrowStyle == nil then d.arrowStyle = "Arcane" end
 	if d.autoQuest == nil then d.autoQuest = true end
 	if d.groupQuests == nil then d.groupQuests = false end
 	d.scale = d.scale or 1

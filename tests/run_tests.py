@@ -60,6 +60,22 @@ f = L.globals().EnvolArrow
 f.scripts.OnUpdate(f, 0.1)
 check(M.rotation is not None, "la flèche tourne (rotation = %s rad)" % M.rotation)
 
+print("== Styles de flèche, halo et rotation fluide")
+styles = L.execute("""
+local out = {}
+for i = 1, #Envol.ARROW_STYLES do out[#out + 1] = Envol.CycleArrowStyle() end
+return table.concat(out, ",")
+""")
+check(styles.split(",")[-1] == "Arcane" and "Classique" in styles, "cycle des styles : " + styles)
+L.execute("EnvolDB.arrowStyle = 'Feu'; Envol.ApplyArrowStyle(); MOCK.rotation = nil")
+f.scripts.OnUpdate(f, 0.03)
+r1 = M.rotation
+L.execute("MOCK.facing = MOCK.facing + 2.5")
+f.scripts.OnUpdate(f, 0.03)
+r2 = M.rotation
+check(r1 is not None and r2 is not None and abs(r2 - r1) < 2.5, "rotation fluide (%.2f -> %.2f, la cible a sauté de 2,5 rad)" % (r1 or 0, r2 or 0))
+L.execute("MOCK.facing = 0")
+
 print("== Bouton suivant / précédent")
 before = E.view.idx
 L.execute("Envol.NextStep()")

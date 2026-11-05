@@ -9,6 +9,12 @@ local atan2, sqrt, pi, cos, abs, floor = math.atan2, math.sqrt, math.pi, math.co
 local arrow, tex, distText, labelText
 local target = nil       -- { c, a, b, step, gi, radius, isGoto, isLast, label }
 local loopPos = {}       -- étape en boucle -> index du point visé
+local halo               -- lueur derrière la flèche : verte dans la bonne direction, rouge à l'opposé
+local curAngle = nil     -- angle affiché (suit la cible en douceur)
+local pulse = 0          -- horloge de la pulsation à l'arrivée
+
+-- Styles de flèche : variantes de couleur du cristal, plus l'ancienne flèche blanche
+E.ARROW_STYLES = { "Arcane", "Givre", "Nature", "Or", "Feu", "Sang", "Ombre", "Classique" }
 local shown = nil        -- flèche visible ?
 
 ---------------------------------------------------------------------------
@@ -183,10 +189,36 @@ local function setVisible(self, v)
 	self:EnableMouse(v and not EnvolDB.locked)
 end
 
+function E.ApplyArrowStyle()
+	if not tex then return end
+	local style = EnvolDB.arrowStyle or "Arcane"
+	if style == "Classique" then
+		tex:SetTexture("Interface\\AddOns\\Envol\\Media\\Fleche")
+		tex:SetSize(56, 56)
+	else
+		tex:SetTexture("Interface\\AddOns\\Envol\\Media\\Fleche_" .. style)
+		tex:SetVertexColor(1, 1, 1)
+		tex:SetSize(64, 64)
+	end
+end
+
+function E.CycleArrowStyle()
+	local cur = EnvolDB.arrowStyle or "Arcane"
+	local n = 1
+	for i, s in ipairs(E.ARROW_STYLES) do if s == cur then n = i end end
+	EnvolDB.arrowStyle = E.ARROW_STYLES[n % #E.ARROW_STYLES + 1]
+	E.ApplyArrowStyle()
+	return EnvolDB.arrowStyle
+end
+
+-- plus court chemin entre deux angles
+local function wrap(a) return ((a + pi) % (2 * pi)) - pi end
+
 local elapsed = 0
 local function onUpdate(self, dt)
 	elapsed = elapsed + dt
-	if elapsed < 0.04 then return end
+	if elapsed < 0.02 then return end
+	dt = elapsed
 	elapsed = 0
 	if not EnvolDB.arrow or not target then
 		setVisible(self, false)
@@ -194,16 +226,16 @@ local function onUpdate(self, dt)
 	end
 	setVisible(self, true)
 	if safe(UnitOnTaxi, "player") then
-		tex:Hide(); distText:SetText(""); labelText:SetText("En vol...")
+		tex:Hide(); halo:Hide(); distText:SetText(""); labelText:SetText("En vol...")
 		return
 	end
 	local pc, pa, pb = E.PlayerWorld()
 	if not pc then
-		tex:Hide(); distText:SetText("?"); labelText:SetText("Position inconnue ici")
+		tex:Hide(); halo:Hide(); distText:SetText("?"); labelText:SetText("Position inconnue ici")
 		return
 	end
 	if pc ~= target.c then
-		tex:Hide(); distText:SetText("")
+		tex:Hide(); halo:Hide(); distText:SetText("")
 		labelText:SetText("Cible sur un autre continent")
 		return
 	end
@@ -221,21 +253,43 @@ local function onUpdate(self, dt)
 		end
 	end
 	local facing = safe(GetPlayerFacing)
+	local classic = (EnvolDB.arrowStyle == "Classique")
+	local arrived = dist <= target.radius
 	tex:Show()
+	local r, g, b = 0.8, 0.8, 0.8
 	if facing then
-		local angle = atan2(dw, dn) - facing
-		tex:SetRotation(angle)
+		local angle = wrap(atan2(dw, dn) - facing)
+		-- rotation fluide : la flèche rattrape la direction sans à-coups
+		if not curAngle then curAngle = angle end
+		curAngle = wrap(curAngle + wrap(angle - curAngle) * math.min(1, dt * 12))
+		tex:SetRotation(curAngle)
 		-- vert quand on va dans la bonne direction, rouge à l'opposé
-		local off = abs(((angle + pi) % (2 * pi)) - pi) / pi
-		if dist <= target.radius then
-			tex:SetVertexColor(0.3, 0.8, 1)
+		local off = abs(angle) / pi
+		if arrived then
+			r, g, b = 0.3, 0.8, 1
 		else
-			tex:SetVertexColor(math.min(1, off * 2), math.min(1, 2 - off * 2), 0.2)
+			r, g, b = math.min(1, off * 2), math.min(1, 2 - off * 2), 0.2
 		end
 	else
+		curAngle = nil
 		tex:SetRotation(0)
-		tex:SetVertexColor(0.8, 0.8, 0.8)
 	end
+	if classic then tex:SetVertexColor(r, g, b) end
+	-- halo et pulsation
+	pulse = arrived and (pulse + dt) or 0
+	if EnvolDB.arrowHalo ~= false and not classic then
+		halo:Show()
+		halo:SetVertexColor(r, g, b)
+		local k = arrived and (0.5 + 0.25 * math.sin(pulse * 6)) or 0.45
+		halo:SetAlpha(k)
+		local sz = arrived and (84 + 10 * math.sin(pulse * 6)) or 84
+		halo:SetSize(sz, sz)
+	else
+		halo:Hide()
+	end
+	local scale = arrived and (1 + 0.08 * math.sin(pulse * 6)) or 1
+	local base = classic and 56 or 64
+	tex:SetSize(base * scale, base * scale)
 	if dist <= target.radius then
 		distText:SetText("Vous y êtes")
 	else
@@ -258,10 +312,16 @@ function E.CreateArrow()
 		if button == "RightButton" and E.ToggleOptions then E.ToggleOptions() end
 	end)
 
+	halo = arrow:CreateTexture(nil, "BACKGROUND")
+	halo:SetTexture("Interface\\AddOns\\Envol\\Media\\Halo")
+	halo:SetBlendMode("ADD")
+	halo:SetSize(84, 84)
+	halo:SetPoint("CENTER", 0, 4)
+	halo:Hide()
+
 	tex = arrow:CreateTexture(nil, "ARTWORK")
-	tex:SetTexture("Interface\\AddOns\\Envol\\Media\\Fleche")
-	tex:SetSize(56, 56)
 	tex:SetPoint("CENTER", 0, 4)
+	E.ApplyArrowStyle()
 
 	distText = arrow:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	distText:SetPoint("TOP", arrow, "BOTTOM", 0, 6)
