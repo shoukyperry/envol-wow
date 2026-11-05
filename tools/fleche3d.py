@@ -3,7 +3,7 @@
 La flèche est un relief (carte de hauteur) : biseau sur les bords et arête centrale, comme un cristal taillé.
 Chaque point du relief est projeté dans une vue inclinée, avec tampon de profondeur et éclairage,
 puis la flèche est rendue sous N angles.
-Usage : python fleche3d.py <sortie> [--angles 64] [--taille 128] [--inclinaison 55] [--couleur Arcane] [--apercu]
+Usage : python fleche3d.py <sortie> [--angles 64] [--taille 128] [--elevation 40] [--cabrage 15] [--couleur Arcane] [--apercu]
 Sortie : un atlas TGA compressé RLE (angles en grille), ou des PNG d'aperçu.
 """
 import argparse, math, os
@@ -68,14 +68,29 @@ def relief():
     return _relief
 
 
-def rendre(lacet, inclinaison, taille, couleur, ss=3):
-    W = taille * ss
-    haut, nh, k, flanc, nf, kf = relief()
+def matrice(lacet, elevation, cabrage):
+    """Monde -> écran : flèche relevée de `cabrage` (pointe vers le haut), tournée de `lacet`,
+    vue par une caméra placée derrière et au-dessus (`elevation` au-dessus de l'horizon).
+    Écran : x à droite, y en haut, z vers l'observateur."""
+    p = math.radians(cabrage)
+    Rp = np.array([[1, 0, 0], [0, math.cos(p), -math.sin(p)], [0, math.sin(p), math.cos(p)]])
     cz, sz = math.cos(lacet), math.sin(lacet)
     Rz = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
-    t = math.radians(inclinaison)
-    Rx = np.array([[1, 0, 0], [0, math.cos(t), -math.sin(t)], [0, math.sin(t), math.cos(t)]])
-    M = Rx @ Rz
+    e = math.radians(elevation)
+    C = np.array([[1, 0, 0], [0, math.sin(e), math.cos(e)], [0, -math.cos(e), math.sin(e)]])
+    return C @ Rz @ Rp
+
+
+def angle_ecran(lacet, elevation, cabrage):
+    """Direction de la pointe à l'écran (radians, 0 = vers le haut, sens trigonométrique)."""
+    v = matrice(lacet, elevation, cabrage) @ np.array([0, 1.0, 0])
+    return math.atan2(-v[0], v[1])
+
+
+def rendre(lacet, elevation, taille, couleur, ss=3, cabrage=15):
+    W = taille * ss
+    haut, nh, k, flanc, nf, kf = relief()
+    M = matrice(lacet, elevation, cabrage)
     lum = np.array([-0.40, 0.50, 0.77]); lum /= np.linalg.norm(lum)
     hv = lum + np.array([0, 0, 1.0]); hv /= np.linalg.norm(hv)
     c1, c2 = (np.array(c) for c in COULEURS[couleur])
@@ -155,11 +170,18 @@ if __name__ == "__main__":
     ap.add_argument("sortie")
     ap.add_argument("--angles", type=int, default=64)
     ap.add_argument("--taille", type=int, default=128)
-    ap.add_argument("--inclinaison", type=float, default=55)
+    ap.add_argument("--elevation", type=float, default=40)
+    ap.add_argument("--cabrage", type=float, default=15)
+    ap.add_argument("--angles-lua", help="écrit la table des directions à l'écran (Lua)")
     ap.add_argument("--couleur", default="Arcane")
     ap.add_argument("--apercu", action="store_true")
     a = ap.parse_args()
-    imgs = [rendre(2 * math.pi * i / a.angles, a.inclinaison, a.taille, a.couleur) for i in range(a.angles)]
+    imgs = [rendre(2 * math.pi * i / a.angles, a.elevation, a.taille, a.couleur, cabrage=a.cabrage) for i in range(a.angles)]
+    if a.angles_lua:
+        dirs = [angle_ecran(2 * math.pi * i / a.angles, a.elevation, a.cabrage) for i in range(a.angles)]
+        with open(a.angles_lua, "w", encoding="utf-8") as f:
+            f.write("-- Généré par tools/fleche3d.py : direction à l'écran de chaque vue de la flèche en relief.\n")
+            f.write("EnvolData.reliefAngles = {" + ",".join("%.5f" % d for d in dirs) + "}\n")
     if a.apercu:
         os.makedirs(a.sortie, exist_ok=True)
         for i, im in enumerate(imgs):

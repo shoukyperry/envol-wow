@@ -47,7 +47,8 @@ os.makedirs(relief, exist_ok=True)
 for couleur in ("Arcane", "Givre", "Nature", "Or", "Feu", "Sang", "Ombre"):
     cible = os.path.join(relief, couleur + ".tga")
     if not os.path.exists(cible) or os.path.getmtime(cible) < os.path.getmtime(os.path.join("tools", "fleche3d.py")):
-        run(*py, os.path.join("tools", "fleche3d.py"), cible, "--angles", "64", "--taille", "128", "--couleur", couleur)
+        run(*py, os.path.join("tools", "fleche3d.py"), cible, "--angles", "64", "--taille", "128", "--couleur", couleur,
+            "--angles-lua", os.path.join(addon, "Data", "Relief.lua"))
 # empreinte de tout le contenu (hors Version.lua) : sert à savoir s'il y a du nouveau
 h = hashlib.sha256()
 files = []

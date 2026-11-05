@@ -198,14 +198,20 @@ end
 E.ArrowRelief = relief
 
 local lastFrame
-local RELIEF_COS = math.cos(math.rad(55))   -- inclinaison de la vue utilisée pour le rendu
-
 local function setReliefAngle(a)
-	-- les vues sont rendues de biais : on choisit celle dont la pointe, à l'écran,
-	-- part exactement dans la direction voulue (sinon la perspective la fait dévier)
-	local th = math.atan2(math.sin(a) * RELIEF_COS, math.cos(a))
-	local step = 2 * pi / RELIEF_ANGLES
-	local i = floor(((th % (2 * pi)) / step) + 0.5) % RELIEF_ANGLES
+	-- chaque vue est rendue en perspective (caméra derrière le personnage, pointe relevée) :
+	-- on prend celle dont la pointe, à l'écran, part au plus près de la direction voulue
+	local dirs = EnvolData.reliefAngles
+	local i = 0
+	if dirs then
+		local best = 10
+		for k = 1, #dirs do
+			local d = abs(((dirs[k] - a + pi) % (2 * pi)) - pi)
+			if d < best then best, i = d, k - 1 end
+		end
+	else
+		i = floor(((a % (2 * pi)) / (2 * pi / RELIEF_ANGLES)) + 0.5) % RELIEF_ANGLES
+	end
 	if i == lastFrame then return end
 	lastFrame = i
 	local c, r = i % RELIEF_COLS, floor(i / RELIEF_COLS)

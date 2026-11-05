@@ -80,14 +80,23 @@ print("== Flèche en relief : bonne vue de la planche selon la direction")
 L.execute("EnvolDB.arrowStyle = 'Arcane'; EnvolDB.arrow3D = true; Envol.ApplyArrowStyle()")
 check("Relief" in str(M.texture), "texture en relief : %s" % M.texture)
 ok3d = True
-for ang, attendu in ((0, (0, 0)), (math.pi / 2, (0, 2)), (math.pi, (0, 4)), (-math.pi / 2, (0, 6)), (2 * math.pi / 64, (1, 0))):
+dirs = [L.eval("EnvolData.reliefAngles[%d]" % k) for k in range(1, 65)]
+pire = 0
+for deg in range(0, 360, 7):
+    ang = math.radians(deg)
     L.execute("Envol.SetReliefAngle(%r)" % ang)
     tc = list(M.texcoord.values())
-    col, row = round(tc[0] * 8), round(tc[2] * 8)
-    if (row, col) != (attendu[1], attendu[0]) and not (ang == 2 * math.pi / 64 and (row, col) == (0, 1)):
-        ok3d = False
-        print("   angle %.2f -> case %s" % (ang, (row, col)))
+    idx = round(tc[2] * 8) * 8 + round(tc[0] * 8)
+    err = abs((dirs[idx] - ang + math.pi) % (2 * math.pi) - math.pi)
+    pire = max(pire, math.degrees(err))
+ok3d = pire < 6
+print("   écart max à l'écran : %.1f°" % pire)
 check(ok3d, "vue choisie selon l'angle (64 vues, 8 x 8)")
+# devant = vue 0 (la pointe s'éloigne), derrière = vue 32 (la pointe vient vers soi)
+L.execute("Envol.SetReliefAngle(0)"); tc0 = list(M.texcoord.values())
+L.execute("Envol.SetReliefAngle(math.pi)"); tcpi = list(M.texcoord.values())
+check((round(tc0[0] * 8), round(tc0[2] * 8)) == (0, 0) and (round(tcpi[0] * 8), round(tcpi[2] * 8)) == (0, 4),
+      "devant -> vue 0, derrière -> vue 32")
 L.execute("EnvolDB.arrow3D = false; Envol.ApplyArrowStyle()")
 check("Fleche_Arcane" in str(M.texture), "décoché : flèche plate (%s)" % M.texture)
 L.execute("EnvolDB.arrow3D = true; Envol.ApplyArrowStyle()")

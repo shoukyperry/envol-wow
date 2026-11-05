@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Envol |cff4fc3f7Leveling|r
 ## Notes: Guide de leveling en français pour WoW Forever : étapes, quêtes automatiques, flèche directionnelle et conseils d'équipement.
-## Version: 1.1.20261105-5dd9ff
+## Version: 1.1.20261105-deb3d7
 ## Author: Fait sur mesure pour Ange (Claude)
 ## SavedVariables: EnvolDB
 ## SavedVariablesPerCharacter: EnvolChar
@@ -14,6 +14,7 @@ Data\RXP.lua
 Data\Polestar_Alliance.lua
 Data\Polestar_Horde.lua
 Data\Equipement.lua
+Data\Relief.lua
 Engine.lua
 Gear.lua
 Arrow.lua
