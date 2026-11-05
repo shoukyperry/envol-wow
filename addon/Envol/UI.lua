@@ -74,6 +74,14 @@ function E.GoalText(g)
 		local name = E.ItemName(g.i) or g.cm or ("objet n°" .. g.i)
 		return string.format("Récupérez %d × %s", g.n or 1, name) .. progressSuffix(g)
 	elseif k == "lv" then
+		local x = g.xp or 0
+		if x < 0 then
+			return string.format("Tuez des monstres jusqu'à n'être plus qu'à %s XP du niveau %d", E.FormatNumber(-x), g.l)
+		elseif x >= 1 then
+			return string.format("Montez au niveau %d, plus %s XP", g.l, E.FormatNumber(x))
+		elseif x > 0 then
+			return string.format("Montez au niveau %d et %d %% de la barre", g.l, math.floor(x * 100 + 0.5))
+		end
 		return "Montez au niveau " .. g.l
 	elseif k == "tr" then
 		return "Apprenez " .. (E.SpellName(g.s) or ("le sort n°" .. g.s))

@@ -358,6 +358,8 @@ local function stepState(i)
 			end
 		end
 	end
+	-- aucune action ne concerne ce personnage (ex. étape réservée à d'autres classes) : on passe
+	if #s.g > 0 and applicable == 0 then return "skip" end
 	if blocking == 0 then
 		if na > 0 then return "skip" end
 		if s.gotoOnly then

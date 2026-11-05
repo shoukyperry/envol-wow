@@ -110,6 +110,23 @@ after = E.view.idx
 check(mid > before and after < mid, "suivant %d -> %d, précédent -> %d" % (before, mid, after))
 L.execute("Envol.NextStep()")
 
+print("== Étape réservée à d'autres classes : sautée (Elfe de la nuit Druide, 6-11 Teldrassil)")
+st = L.execute("""
+MOCK.class = 'DRUID'; MOCK.race = 'NightElf'; MOCK.faction = 'Alliance'; MOCK.level = 9
+Envol.player = {}; Envol.ResetConditionCache(); Envol.RefreshPlayer()
+local saved, savedIdx = EnvolChar.guide, EnvolChar.idx
+Envol.OpenGuide('rxp:6-11 Teldrassil', 1)
+local r = Envol.StepState(192)
+local txt = Envol.GoalText({ k = 'lv', l = 10, xp = -850 })
+MOCK.class = 'WARRIOR'; MOCK.race = 'Tauren'; MOCK.faction = 'Horde'; MOCK.level = 1
+Envol.player = {}; Envol.ResetConditionCache(); Envol.RefreshPlayer()
+Envol.OpenGuide(saved, savedIdx)
+return r .. '|' .. txt
+""")
+etat, txt = st.split("|", 1)
+check(etat == "skip", "étape 192 pour un druide : %s" % etat)
+check("850" in txt, "texte d'XP : %s" % txt)
+
 print("== Fin de route : enchaînement")
 L.execute("EnvolChar.idx = #Envol.guide.steps + 1; Envol.Refresh(true)")
 M.RunTimers()
