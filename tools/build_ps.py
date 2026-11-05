@@ -109,6 +109,8 @@ def conv_goal(go, g):
             fk = go.get("fromKind", "npc")
             src = " sur " + name(fk, go["fromId"], g, go["from"]) if fk == "npc" else " (" + name(fk, go["fromId"], g, go["from"]) + ")"
         out = {"k": "col", "i": go["item"], "n": n, "x": f"Récupérez {n} × {it}{src}"}
+        if f"item:{go['item']}" not in nfr:
+            out["en"] = it  # pas de nom français connu : le client le donnera en jeu
         if go.get("quest"):
             out["q"] = go["quest"]
             if go.get("oi"):
@@ -158,6 +160,8 @@ def conv_goal(go, g):
         it = name("item", go["item"], g, go.get("itemName"))
         n = go.get("count", 1)
         out = {"k": "col", "i": go["item"], "n": n, "x": f"Achetez {n} × {it}" + (f" ({who})" if who else "")}
+        if f"item:{go['item']}" not in nfr:
+            out["en"] = it
         cands = go.get("candidates") or []
         if cands and not go.get("map"):
             p = pos(cands[0])

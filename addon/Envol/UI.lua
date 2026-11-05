@@ -39,10 +39,22 @@ local DEFAULT_TEXT = {
 	die = "Mourez puis ressuscitez à l'ange (raccourci)",
 }
 
+-- nom d'objet resté en anglais dans la source : remplacé par celui du client (français)
+local function frenchItem(g, text)
+	if type(g.en) == "string" and g.i then
+		local n = E.ItemName(g.i)
+		if n and n ~= g.en then
+			local pat = g.en:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+			text = text:gsub(pat, (n:gsub("%%", "%%%%")))
+		end
+	end
+	return text
+end
+
 function E.GoalText(g)
 	local k = g.k
 	if g.x and k ~= "c" then
-		return g.x .. progressSuffix(g)
+		return frenchItem(g, g.x) .. progressSuffix(g)
 	end
 	if k == "a" then
 		return "Acceptez « " .. E.QuestName(g.q) .. " »"

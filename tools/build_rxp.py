@@ -339,6 +339,22 @@ def main():
             for n in alts:
                 if n not in names and not n.startswith("RestedXP"):
                     warn["next-missing:" + n] += 1
+    # noms de monstres / PNJ / objets laissés en anglais par la traduction : passés en français
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import traduire
+    for g in guides:
+        for s in g["steps"]:
+            s["t"] = [traduire.traduire(t) if isinstance(t, str) else [traduire.traduire(t[0]), t[1]] for t in s.get("t", [])]
+            if not s["t"]:
+                del s["t"]
+            for go in s["g"]:
+                if go.get("x"):
+                    go["x"] = traduire.traduire(go["x"])
+                if go.get("k") == "col" and go.get("i"):
+                    n = traduire.nom_francais("item", go["i"])
+                    if not n:
+                        go["en"] = 1  # nom résolu en jeu par le client
+    print("noms traduits :", traduire.stats["traduits"])
     json.dump(guides, open(os.path.join(WORK, "rxp.json"), "w"), ensure_ascii=False)
     print(len(guides), "guides,", sum(len(g["steps"]) for g in guides), "steps")
     for g in guides:

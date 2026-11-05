@@ -27,6 +27,10 @@ et aucun des deux n'a approuvé cette adaptation. Usage personnel, non commercia
    Source : Polestar Guides, Gear/SpecData.lua (GPLv3), qui mélange ses poids de leveling et des
    simulations wowsims (https://github.com/wowsims, licence MIT).
 
+4) Noms français des monstres, PNJ et objets dans les textes RestedXP
+   Croisement des noms anglais de forever-db (Polestar, GPLv3) et des noms français de Polestar,
+   complété par la table de PNJ français de RestedXP (CC BY-NC-SA 4.0).
+
 Code d'Envol (Core.lua, Engine.lua, Gear.lua, Arrow.lua, UI.lua) et texture Media/Fleche.tga :
 écrits pour Envol.
 
