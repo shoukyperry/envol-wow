@@ -41,6 +41,13 @@ for step in ("dump_polestar.py", "build_rxp.py", "build_ps.py", "build_lua.py", 
     run(*py, os.path.join("tools", step), env=env, stdout=subprocess.DEVNULL if step == "build_rxp.py" else None)
 
 addon = env["ENVOL_ADDON"]
+# flèches en relief : 64 angles par couleur, rendus une fois (même résultat à chaque construction)
+relief = os.path.join(addon, "Media", "Relief")
+os.makedirs(relief, exist_ok=True)
+for couleur in ("Arcane", "Givre", "Nature", "Or", "Feu", "Sang", "Ombre"):
+    cible = os.path.join(relief, couleur + ".tga")
+    if not os.path.exists(cible) or os.path.getmtime(cible) < os.path.getmtime(os.path.join("tools", "fleche3d.py")):
+        run(*py, os.path.join("tools", "fleche3d.py"), cible, "--angles", "64", "--taille", "128", "--couleur", couleur)
 # empreinte de tout le contenu (hors Version.lua) : sert à savoir s'il y a du nouveau
 h = hashlib.sha256()
 files = []

@@ -1,5 +1,5 @@
 """Exercise the Envol addon in Lua 5.1 against a mocked WoW client."""
-import re, sys, os
+import re, sys, os, math
 from lupa import lua51
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,7 +67,7 @@ for i = 1, #Envol.ARROW_STYLES do out[#out + 1] = Envol.CycleArrowStyle() end
 return table.concat(out, ",")
 """)
 check(styles.split(",")[-1] == "Arcane" and "Classique" in styles, "cycle des styles : " + styles)
-L.execute("EnvolDB.arrowStyle = 'Feu'; Envol.ApplyArrowStyle(); MOCK.rotation = nil")
+L.execute("EnvolDB.arrowStyle = 'Feu'; EnvolDB.arrow3D = false; Envol.ApplyArrowStyle(); MOCK.rotation = nil")
 f.scripts.OnUpdate(f, 0.03)
 r1 = M.rotation
 L.execute("MOCK.facing = MOCK.facing + 2.5")
@@ -75,6 +75,22 @@ f.scripts.OnUpdate(f, 0.03)
 r2 = M.rotation
 check(r1 is not None and r2 is not None and abs(r2 - r1) < 2.5, "rotation fluide (%.2f -> %.2f, la cible a sauté de 2,5 rad)" % (r1 or 0, r2 or 0))
 L.execute("MOCK.facing = 0")
+
+print("== Flèche en relief : bonne vue de la planche selon la direction")
+L.execute("EnvolDB.arrowStyle = 'Arcane'; EnvolDB.arrow3D = true; Envol.ApplyArrowStyle()")
+check("Relief" in str(M.texture), "texture en relief : %s" % M.texture)
+ok3d = True
+for ang, attendu in ((0, (0, 0)), (math.pi / 2, (0, 2)), (math.pi, (0, 4)), (-math.pi / 2, (0, 6)), (2 * math.pi / 64, (1, 0))):
+    L.execute("Envol.SetReliefAngle(%r)" % ang)
+    tc = list(M.texcoord.values())
+    col, row = round(tc[0] * 8), round(tc[2] * 8)
+    if (row, col) != (attendu[1], attendu[0]) and not (ang == 2 * math.pi / 64 and (row, col) == (0, 1)):
+        ok3d = False
+        print("   angle %.2f -> case %s" % (ang, (row, col)))
+check(ok3d, "vue choisie selon l'angle (64 vues, 8 x 8)")
+L.execute("EnvolDB.arrow3D = false; Envol.ApplyArrowStyle()")
+check("Fleche_Arcane" in str(M.texture), "décoché : flèche plate (%s)" % M.texture)
+L.execute("EnvolDB.arrow3D = true; Envol.ApplyArrowStyle()")
 
 print("== Bouton suivant / précédent")
 before = E.view.idx

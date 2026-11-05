@@ -41,6 +41,8 @@ local function newObj(kind)
 	o.GetPoint = function() return "CENTER", nil, "CENTER", 0, 0 end
 	o.GetChecked = function() return false end
 	o.SetRotation = function(self, r) M.rotation = r end
+	o.SetTexCoord = function(self, ...) M.texcoord = { ... } end
+	o.SetTexture = function(self, t) M.texture = t end
 	o.SetVertexColor = function(self, r, g, b) M.color = { r, g, b } end
 	o.SetAlpha = function(self, a) self.alpha = a end
 	return setmetatable(o, frameMT)

@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Outils de test
-        run: pip install lupa
+        run: pip install lupa numpy scipy pillow
       - name: Construire et tester (routes RestedXP + Polestar à jour)
         run: python tools/build.py
       - name: Empaqueter le lanceur

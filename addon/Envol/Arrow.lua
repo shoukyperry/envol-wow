@@ -189,9 +189,38 @@ local function setVisible(self, v)
 	self:EnableMouse(v and not EnvolDB.locked)
 end
 
+local RELIEF_ANGLES, RELIEF_COLS = 64, 8
+
+-- flèche en relief : planche de 64 vues (8 x 8), une par direction
+local function relief()
+	return EnvolDB.arrow3D ~= false and (EnvolDB.arrowStyle or "Arcane") ~= "Classique"
+end
+E.ArrowRelief = relief
+
+local lastFrame
+local function setReliefAngle(a)
+	local step = 2 * pi / RELIEF_ANGLES
+	local i = floor(((a % (2 * pi)) / step) + 0.5) % RELIEF_ANGLES
+	if i == lastFrame then return end
+	lastFrame = i
+	local c, r = i % RELIEF_COLS, floor(i / RELIEF_COLS)
+	tex:SetTexCoord(c / RELIEF_COLS, (c + 1) / RELIEF_COLS, r / RELIEF_COLS, (r + 1) / RELIEF_COLS)
+end
+E.SetReliefAngle = setReliefAngle
+
 function E.ApplyArrowStyle()
 	if not tex then return end
 	local style = EnvolDB.arrowStyle or "Arcane"
+	lastFrame = nil
+	tex:SetRotation(0)
+	tex:SetTexCoord(0, 1, 0, 1)
+	if relief() then
+		tex:SetTexture("Interface\\AddOns\\Envol\\Media\\Relief\\" .. style)
+		tex:SetVertexColor(1, 1, 1)
+		tex:SetSize(76, 76)
+		setReliefAngle(curAngle or 0)
+		return
+	end
 	if style == "Classique" then
 		tex:SetTexture("Interface\\AddOns\\Envol\\Media\\Fleche")
 		tex:SetSize(56, 56)
@@ -262,7 +291,7 @@ local function onUpdate(self, dt)
 		-- rotation fluide : la flèche rattrape la direction sans à-coups
 		if not curAngle then curAngle = angle end
 		curAngle = wrap(curAngle + wrap(angle - curAngle) * math.min(1, dt * 12))
-		tex:SetRotation(curAngle)
+		if relief() then setReliefAngle(curAngle) else tex:SetRotation(curAngle) end
 		-- vert quand on va dans la bonne direction, rouge à l'opposé
 		local off = abs(angle) / pi
 		if arrived then
@@ -272,7 +301,7 @@ local function onUpdate(self, dt)
 		end
 	else
 		curAngle = nil
-		tex:SetRotation(0)
+		if relief() then setReliefAngle(0) else tex:SetRotation(0) end
 	end
 	if classic then tex:SetVertexColor(r, g, b) end
 	-- halo et pulsation
@@ -288,7 +317,7 @@ local function onUpdate(self, dt)
 		halo:Hide()
 	end
 	local scale = arrived and (1 + 0.08 * math.sin(pulse * 6)) or 1
-	local base = classic and 56 or 64
+	local base = classic and 56 or (relief() and 76 or 64)
 	tex:SetSize(base * scale, base * scale)
 	if dist <= target.radius then
 		distText:SetText("Vous y êtes")
