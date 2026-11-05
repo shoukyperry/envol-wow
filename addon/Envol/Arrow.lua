@@ -198,9 +198,14 @@ end
 E.ArrowRelief = relief
 
 local lastFrame
+local RELIEF_COS = math.cos(math.rad(55))   -- inclinaison de la vue utilisée pour le rendu
+
 local function setReliefAngle(a)
+	-- les vues sont rendues de biais : on choisit celle dont la pointe, à l'écran,
+	-- part exactement dans la direction voulue (sinon la perspective la fait dévier)
+	local th = math.atan2(math.sin(a) * RELIEF_COS, math.cos(a))
 	local step = 2 * pi / RELIEF_ANGLES
-	local i = floor(((a % (2 * pi)) / step) + 0.5) % RELIEF_ANGLES
+	local i = floor(((th % (2 * pi)) / step) + 0.5) % RELIEF_ANGLES
 	if i == lastFrame then return end
 	lastFrame = i
 	local c, r = i % RELIEF_COLS, floor(i / RELIEF_COLS)
