@@ -562,7 +562,54 @@ local function setArrow(b, show)
 	t:Show()
 end
 
+-- L'objet améliore-t-il l'équipement, utilisable dès maintenant ?
+function G.IsUpgradeLink(link)
+	if not (EnvolDB.gear and DATA and link) then return false end
+	local r = G.Compare(link)
+	return r and r.usable and r.upgrade and not r.needLevel and true or false
+end
+
+-- Marchand : onglet achat (et rachat)
+local function updateMerchant()
+	if not (MerchantFrame and MerchantFrame.IsShown and MerchantFrame:IsShown()) then return end
+	local buyback = MerchantFrame.selectedTab == 2
+	local per = MERCHANT_ITEMS_PER_PAGE or 10
+	for i = 1, 12 do
+		local b = _G["MerchantItem" .. i .. "ItemButton"]
+		if b then
+			local link
+			if (not b.IsShown or b:IsShown()) then
+				local id = safe(b.GetID, b)
+				if buyback then
+					link = GetBuybackItemLink and safe(GetBuybackItemLink, id or i)
+				elseif i <= per then
+					id = (id and id > 0) and id or ((MerchantFrame.page or 1) - 1) * per + i
+					link = GetMerchantItemLink and safe(GetMerchantItemLink, id)
+				end
+			end
+			setArrow(b, link and G.IsUpgradeLink(link))
+		end
+	end
+end
+
+-- Bagnon (BagBrother) : il affiche déjà la flèche verte du jeu quand Item:IsUpgrade() le dit (prévu pour Pawn)
+local function hookBagnon()
+	local A = _G.BagBrother or _G.Bagnon
+	local Item = type(A) == "table" and rawget(A, "Item")
+	if type(Item) ~= "table" or rawget(Item, "envolHooked") then return end
+	local orig = Item.IsUpgrade
+	Item.IsUpgrade = function(self, ...)
+		local link = self.info and self.info.hyperlink
+		if link and G.IsUpgradeLink(link) then return true end
+		if orig then return orig(self, ...) end
+		return false
+	end
+	Item.envolHooked = true
+end
+G.HookBagnon = hookBagnon
+
 function G.UpdateBagArrows()
+	updateMerchant()
 	for _, f in ipairs(containerFrames()) do
 		if f.IsShown and f:IsShown() then
 			eachButton(f, function(b)
@@ -570,8 +617,7 @@ function G.UpdateBagArrows()
 				if EnvolDB.gear and DATA and (not b.IsShown or b:IsShown()) then
 					local bag, slot = buttonSlot(b)
 					local link = bag and slot and bagLink(bag, slot)
-					local r = link and G.Compare(link)
-					show = r and r.usable and r.upgrade and not r.needLevel and true or false
+					show = G.IsUpgradeLink(link)
 				end
 				setArrow(b, show)
 			end)
@@ -595,9 +641,12 @@ local function hookBags()
 			end
 		end
 	end
-	if hooksecurefunc and type(ContainerFrame_Update) == "function" then
-		pcall(hooksecurefunc, "ContainerFrame_Update", requestArrows)
+	if hooksecurefunc then
+		for _, fn in ipairs({ "ContainerFrame_Update", "MerchantFrame_UpdateMerchantInfo", "MerchantFrame_UpdateBuybackInfo" }) do
+			if type(_G[fn]) == "function" then pcall(hooksecurefunc, fn, requestArrows) end
+		end
 	end
+	hookBagnon()
 end
 
 ---------------------------------------------------------------------------
@@ -615,10 +664,14 @@ ev:SetScript("OnEvent", function(_, event)
 		hookBags()
 		for _, name in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
 			"CHARACTER_POINTS_CHANGED", "PLAYER_TALENT_UPDATE", "ACTIVE_TALENT_GROUP_CHANGED", "QUEST_COMPLETE",
-			"QUEST_FINISHED", "GET_ITEM_INFO_RECEIVED" }) do
+			"QUEST_FINISHED", "GET_ITEM_INFO_RECEIVED", "MERCHANT_SHOW", "MERCHANT_UPDATE", "ADDON_LOADED" }) do
 			pcall(ev.RegisterEvent, ev, name)
 		end
 		C_Timer.After(3, G.RequestScan)
+	elseif event == "ADDON_LOADED" then
+		hookBagnon()
+	elseif event == "MERCHANT_SHOW" or event == "MERCHANT_UPDATE" then
+		requestArrows()
 	elseif event == "QUEST_COMPLETE" then
 		C_Timer.After(0.1, function() markReward(0) end)
 	elseif event == "QUEST_FINISHED" then

@@ -219,6 +219,22 @@ b1, b2 = L.execute("local f = ContainerFrame1; return f.Items[1].EnvolUp:IsShown
 check(not b1 and b2, "la flèche suit l'objet quand il change de case")
 L.execute("ContainerFrame1:Hide()")
 
+print("== Flèche verte chez le marchand et dans Bagnon")
+L.execute("""
+MerchantFrame = CreateFrame('Frame', 'MerchantFrame'); MerchantFrame.selectedTab = 1; MerchantFrame.page = 1
+local stock = { 'vieille', 'hache' }
+GetMerchantItemLink = function(i) return stock[i] end
+for i = 1, 2 do local b = CreateFrame('Button', 'MerchantItem' .. i .. 'ItemButton'); b.GetID = function() return i end end
+Envol.Gear.UpdateBagArrows()
+BagBrother = { Item = { IsUpgrade = function() return false end } }
+Envol.Gear.HookBagnon()
+""")
+m1, m2 = L.execute("return rawget(MerchantItem1ItemButton, 'EnvolUp') and MerchantItem1ItemButton.EnvolUp:IsShown() or false, rawget(MerchantItem2ItemButton, 'EnvolUp') and MerchantItem2ItemButton.EnvolUp:IsShown()")
+check(not m1 and m2, "marchand : flèche sur la hache seulement (%s, %s)" % (m1, m2))
+u1, u2 = L.execute("local I = BagBrother.Item; return I.IsUpgrade({ info = { hyperlink = 'hache' } }), I.IsUpgrade({ info = { hyperlink = 'vieille' } })")
+check(u1 is True and u2 is False, "Bagnon : Item:IsUpgrade suit Envol (%s, %s)" % (u1, u2))
+L.execute("MerchantFrame:Hide()")
+
 print("== Talents : build choisi et apprentissage automatique (Guerrier niveau 12)")
 L.execute("""
 local d = EnvolData.talents.WARRIOR
