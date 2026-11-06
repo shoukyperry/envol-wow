@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Envol |cff4fc3f7Leveling|r
 ## Notes: Guide de leveling en français pour WoW Forever : étapes, quêtes automatiques, flèche directionnelle et conseils d'équipement.
-## Version: 1.1.20261106-f176a5
+## Version: 1.1.20261106-49b655
 ## Author: Fait sur mesure pour Ange (Claude)
 ## OptionalDeps: BagBrother, Bagnon
 ## SavedVariables: EnvolDB

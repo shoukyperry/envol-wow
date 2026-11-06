@@ -163,6 +163,8 @@ end
 -- État des objectifs
 ---------------------------------------------------------------------------
 
+E.notOffered = {}   -- quêtes que le PNJ de l'étape ne propose pas (cette session, ce niveau)
+
 -- Renvoie "done", "todo" ou "na" (sans objet : quête absente, etc.)
 local function goalState(g, i, gi)
 	local k = g.k
@@ -170,6 +172,10 @@ local function goalState(g, i, gi)
 	if ticks and ticks[gi] then return "done" end
 	if k == "a" then
 		if E.IsOnQuest(g.q) or E.IsQuestDone(g.q) then return "done" end
+		-- pas encore proposée (niveau trop bas sur Forever) ou absente chez le PNJ : on passe
+		local ml = EnvolData.questMinLevel and EnvolData.questMinLevel[g.q]
+		if ml and (E.player.level or 1) < ml then return "na" end
+		if E.notOffered[g.q] then return "na" end
 		return "todo"
 	elseif k == "t" then
 		if E.IsQuestDone(g.q) then return "done" end
@@ -627,7 +633,39 @@ local function onQuestComplete()
 	end
 end
 
+-- Le PNJ de l'étape ne propose pas la quête à prendre (retirée ou modifiée sur Forever) : l'étape est passée
+local function checkNotOffered()
+	local v = E.view
+	if not (v and v.step and C_GossipInfo and C_GossipInfo.GetAvailableQuests) then return end
+	local npc = safe(UnitName, "npc")
+	if not npc then return end
+	local s = E.guide.steps[v.idx]
+	local match = false
+	for _, t in ipairs(s.tg or {}) do
+		local name = t:gsub("::%d+$", "")
+		if name == npc or (E.NpcName and E.NpcName(t) == npc) then match = true end
+	end
+	if not match then return end
+	local offered = {}
+	local ok, avail = pcall(C_GossipInfo.GetAvailableQuests)
+	if not ok or type(avail) ~= "table" then return end
+	for _, info in ipairs(avail) do
+		if info.questID then offered[info.questID] = true end
+	end
+	local changed = false
+	for _, g in ipairs(s.g) do
+		if g.k == "a" and g.q and E.Applies(g.c) and not offered[g.q] and not E.IsOnQuest(g.q)
+			and not E.IsQuestDone(g.q) and not E.notOffered[g.q] then
+			E.notOffered[g.q] = E.player.level or 0
+			changed = true
+			E.Print("« " .. (E.QuestName and E.QuestName(g.q) or g.q) .. " » n'est pas proposée par " .. npc .. " : étape passée.")
+		end
+	end
+	if changed and E.RequestRefresh then E.RequestRefresh() end
+end
+
 local function onGossipShow()
+	pcall(checkNotOffered)
 	if not EnvolDB.autoQuest or IsShiftKeyDown() then return end
 	if not (C_GossipInfo and C_GossipInfo.GetActiveQuests) then return end
 	local turn, take = visibleQuestGoals("t"), visibleQuestGoals("a")
@@ -694,6 +732,7 @@ handlers.PLAYER_ALIVE = function()
 end
 handlers.PLAYER_LEVEL_UP = function(level)
 	E.player.level = readable(level) or E.player.level
+	E.notOffered = {}
 	E.ResetConditionCache()
 	E.RequestRefresh()
 end

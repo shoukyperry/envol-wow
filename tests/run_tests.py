@@ -280,5 +280,13 @@ for _ in range(3):
     L.execute("Envol.Talents.Cycle()")
 check(L.execute("return Envol.Talents.Label()") == "Aucun", "le cycle revient à « Aucun »")
 
+print("== Quête pas encore proposée (niveau minimum Forever)")
+st1 = L.execute("EnvolData.questMinLevel[999991] = 60; return Envol.GoalState({ k = 'a', q = 999991 }, 1, 1)")
+st2 = L.execute("Envol.notOffered[999992] = 1; return Envol.GoalState({ k = 'a', q = 999992 }, 1, 1)")
+st3 = L.execute("return Envol.GoalState({ k = 'a', q = 999993 }, 1, 1)")
+check(st1 == "na" and st2 == "na" and st3 == "todo", "niveau trop bas / non proposée -> passée (%s, %s, %s)" % (st1, st2, st3))
+txt = L.execute("return Envol.GoalText({ k = 'a', q = 1141, x = 'Accept Les Family et les the Fishing Pole' })")
+check("canne à pêche" in txt, "nom officiel de la quête : %s" % txt)
+
 print("\nRÉSULTAT :", "tout est bon" if ok else "des tests échouent")
 sys.exit(0 if ok else 1)

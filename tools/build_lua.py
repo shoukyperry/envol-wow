@@ -53,6 +53,16 @@ qn = {q: nfr["quest:" + str(q)] for q in sorted(qids) if "quest:" + str(q) in nf
 with open(OUT + "Quetes.lua", "w", encoding="utf-8") as f:
     f.write("-- Noms français des quêtes utilisées par les routes (source : Polestar, noms du client).\n")
     f.write("EnvolData.questNames = " + ser(qn) + "\n")
+    # niveau minimum pour prendre chaque quête sur Forever (forever-db) : une quête pas encore proposée n'est pas affichée
+    ml = {}
+    qf = os.path.join(PS_DIR, "forever-db", "data", "quest.jsonl")
+    if os.path.exists(qf):
+        for line in open(qf, encoding="utf-8"):
+            o = json.loads(line)
+            if o.get("id") in qids and (o.get("min_level") or 0) > 1:
+                ml[o["id"]] = o["min_level"]
+    f.write("EnvolData.questMinLevel = " + ser(ml) + "\n")
+    print(len(ml), "niveaux minimum de quête")
 for fn in sorted(os.listdir(OUT)):
     print(fn, os.path.getsize(OUT + fn) // 1024, "KB")
 print(len(qids), "quests,", len(qn), "named")

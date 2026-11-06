@@ -53,7 +53,9 @@ end
 
 function E.GoalText(g)
 	local k = g.k
-	if g.x and k ~= "c" then
+	-- prendre / rendre : le nom français officiel de la quête plutôt que la traduction approximative du guide
+	local named = (k == "a" or k == "t") and g.q and EnvolData.questNames and EnvolData.questNames[g.q]
+	if g.x and k ~= "c" and not named then
 		return frenchItem(g, g.x) .. progressSuffix(g)
 	end
 	if k == "a" then
