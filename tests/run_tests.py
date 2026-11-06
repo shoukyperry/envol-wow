@@ -204,6 +204,21 @@ check(u is not None and u.link == "hache", "amélioration repérée dans les sac
 lines = view_lines()
 check(any("Amélioration" in (t or "") for t in lines), "ligne « Amélioration » dans la fenêtre")
 
+print("== Flèche verte sur les icônes des sacs")
+L.execute("""
+MOCK.bags = {'hache', 'vieille'}
+local f = CreateFrame('Frame', 'ContainerFrame1')
+local function btn(slot) local b = CreateFrame('Button'); b.GetBagID = function() return 0 end; b.GetID = function() return slot end; return b end
+f.Items = { btn(1), btn(2) }
+Envol.Gear.UpdateBagArrows()
+""")
+b1, b2 = L.execute("local f = ContainerFrame1; return rawget(f.Items[1], 'EnvolUp') and f.Items[1].EnvolUp:IsShown(), rawget(f.Items[2], 'EnvolUp') and f.Items[2].EnvolUp:IsShown() or false")
+check(b1 and not b2, "flèche sur la hache (amélioration), pas sur l'arme identique (%s, %s)" % (b1, b2))
+L.execute("MOCK.bags = {'vieille', 'hache'}; Envol.Gear.UpdateBagArrows()")
+b1, b2 = L.execute("local f = ContainerFrame1; return f.Items[1].EnvolUp:IsShown(), f.Items[2].EnvolUp:IsShown()")
+check(not b1 and b2, "la flèche suit l'objet quand il change de case")
+L.execute("ContainerFrame1:Hide()")
+
 print("== Talents : build choisi et apprentissage automatique (Guerrier niveau 12)")
 L.execute("""
 local d = EnvolData.talents.WARRIOR

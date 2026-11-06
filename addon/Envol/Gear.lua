@@ -78,6 +78,10 @@ function G.Spec()
 	for _, s in ipairs(info.specs) do
 		if s.key == forced then return s.key, s.fr, false end
 	end
+	local build = EnvolChar.talentBuild
+	for _, s in ipairs(info.specs) do
+		if s.key == build then return s.key, s.fr, true end
+	end
 	local S = C_SpecializationInfo
 	if S and S.IsSpecSelectionEnabled and S.GetSpecialization then
 		local _, _, classID = UnitClass("player")
@@ -379,12 +383,12 @@ local function markReward(tries)
 				local m = marks[b]
 				if not m then
 					m = b:CreateTexture(nil, "OVERLAY", nil, 7)
-					m:SetTexture("Interface\\AddOns\\Envol\\Media\\Fleche")
 					m:SetSize(18, 18)
 					m:SetPoint("TOPLEFT", b, "TOPLEFT", -4, 4)
 					marks[b] = m
 				end
-				if up then m:SetVertexColor(0.35, 0.95, 0.35) else m:SetVertexColor(1, 0.82, 0) end
+				-- flèche verte = amélioration ; pièce d'or = rien de mieux, se revend le plus cher
+				m:SetTexture(up and "Interface\\AddOns\\Envol\\Media\\Amelioration" or "Interface\\Icons\\INV_Misc_Coin_01")
 				m:Show()
 			end
 		end
@@ -449,6 +453,7 @@ function G.RequestScan()
 	C_Timer.After(0.8, function()
 		scanPending = false
 		G.Scan()
+		G.UpdateBagArrows()
 		if E.UpdateUI then E.UpdateUI() end
 	end)
 end
@@ -502,6 +507,100 @@ function G.SpecLabel()
 end
 
 ---------------------------------------------------------------------------
+-- Flèche verte sur les icônes des sacs (comme Pawn)
+---------------------------------------------------------------------------
+
+local function containerFrames()
+	local list = {}
+	if ContainerFrameCombinedBags then list[#list + 1] = ContainerFrameCombinedBags end
+	for i = 1, (NUM_CONTAINER_FRAMES or 13) do
+		local f = _G["ContainerFrame" .. i]
+		if f then list[#list + 1] = f end
+	end
+	return list
+end
+
+local function eachButton(f, fn)
+	if f.EnumerateValidItems then
+		if pcall(function() for _, b in f:EnumerateValidItems() do fn(b) end end) then return end
+	end
+	if type(f.Items) == "table" then
+		for _, b in ipairs(f.Items) do fn(b) end
+		return
+	end
+	local name = f.GetName and f:GetName()
+	if not name then return end
+	for j = 1, 40 do
+		local b = _G[name .. "Item" .. j]
+		if not b then break end
+		fn(b)
+	end
+end
+
+local function buttonSlot(b)
+	local bag = b.GetBagID and safe(b.GetBagID, b)
+	if bag == nil then
+		local p = b.GetParent and b:GetParent()
+		bag = p and p.GetID and safe(p.GetID, p)
+	end
+	return bag, b.GetID and safe(b.GetID, b)
+end
+
+local function setArrow(b, show)
+	local t = rawget(b, "EnvolUp")
+	if not show then
+		if t then t:Hide() end
+		return
+	end
+	if not t then
+		t = b:CreateTexture(nil, "OVERLAY", nil, 7)
+		t:SetTexture("Interface\\AddOns\\Envol\\Media\\Amelioration")
+		t:SetSize(15, 15)
+		t:SetPoint("TOPLEFT", b, "TOPLEFT", 1, -1)
+		b.EnvolUp = t
+	end
+	t:Show()
+end
+
+function G.UpdateBagArrows()
+	for _, f in ipairs(containerFrames()) do
+		if f.IsShown and f:IsShown() then
+			eachButton(f, function(b)
+				local show = false
+				if EnvolDB.gear and DATA and (not b.IsShown or b:IsShown()) then
+					local bag, slot = buttonSlot(b)
+					local link = bag and slot and bagLink(bag, slot)
+					local r = link and G.Compare(link)
+					show = r and r.usable and r.upgrade and not r.needLevel and true or false
+				end
+				setArrow(b, show)
+			end)
+		end
+	end
+end
+
+local arrowsPending = false
+local function requestArrows()
+	if arrowsPending then return end
+	arrowsPending = true
+	C_Timer.After(0, function() arrowsPending = false; G.UpdateBagArrows() end)
+end
+
+local function hookBags()
+	for _, f in ipairs(containerFrames()) do
+		if f.HookScript then pcall(f.HookScript, f, "OnShow", requestArrows) end
+		if hooksecurefunc then
+			for _, m in ipairs({ "UpdateItems", "Update" }) do
+				if type(f[m]) == "function" then pcall(hooksecurefunc, f, m, requestArrows) end
+			end
+		end
+	end
+	if hooksecurefunc and type(ContainerFrame_Update) == "function" then
+		pcall(hooksecurefunc, "ContainerFrame_Update", requestArrows)
+	end
+end
+
+---------------------------------------------------------------------------
 -- Démarrage
 ---------------------------------------------------------------------------
 
@@ -513,6 +612,7 @@ ev:SetScript("OnEvent", function(_, event)
 		if EnvolDB.gear == nil then EnvolDB.gear = true end
 		if EnvolDB.autoReward == nil then EnvolDB.autoReward = false end
 		hookTooltips()
+		hookBags()
 		for _, name in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
 			"CHARACTER_POINTS_CHANGED", "PLAYER_TALENT_UPDATE", "ACTIVE_TALENT_GROUP_CHANGED", "QUEST_COMPLETE",
 			"QUEST_FINISHED", "GET_ITEM_INFO_RECEIVED" }) do
